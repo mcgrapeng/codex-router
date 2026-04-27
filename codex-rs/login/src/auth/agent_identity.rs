@@ -5,9 +5,6 @@ use codex_protocol::account::PlanType as AccountPlanType;
 use crate::default_client::build_reqwest_client;
 
 use super::storage::AgentIdentityAuthRecord;
-
-const AGENT_IDENTITY_AUTHAPI_BASE_URL: &str = "https://auth.openai.com/api/accounts";
-
 #[derive(Clone, Debug)]
 pub struct AgentIdentityAuth {
     record: AgentIdentityAuthRecord,
@@ -15,14 +12,14 @@ pub struct AgentIdentityAuth {
 }
 
 impl AgentIdentityAuth {
-    pub async fn load(record: AgentIdentityAuthRecord) -> std::io::Result<Self> {
-        let process_task_id = register_agent_task(
-            &build_reqwest_client(),
-            &agent_identity_authapi_base_url(),
-            key(&record),
-        )
-        .await
-        .map_err(std::io::Error::other)?;
+    pub async fn load(
+        record: AgentIdentityAuthRecord,
+        chatgpt_base_url: &str,
+    ) -> std::io::Result<Self> {
+        let process_task_id =
+            register_agent_task(&build_reqwest_client(), chatgpt_base_url, key(&record))
+                .await
+                .map_err(std::io::Error::other)?;
         Ok(Self {
             record,
             process_task_id,
@@ -56,10 +53,6 @@ impl AgentIdentityAuth {
     pub fn is_fedramp_account(&self) -> bool {
         self.record.chatgpt_account_is_fedramp
     }
-}
-
-fn agent_identity_authapi_base_url() -> String {
-    AGENT_IDENTITY_AUTHAPI_BASE_URL.to_string()
 }
 
 fn key(record: &AgentIdentityAuthRecord) -> AgentIdentityKey<'_> {
