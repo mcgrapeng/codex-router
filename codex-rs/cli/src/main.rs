@@ -80,9 +80,9 @@ use codex_terminal_detection::TerminalName;
     subcommand_negates_reqs = true,
     // The executable is sometimes invoked via a platform‑specific name like
     // `codex-x86_64-unknown-linux-musl`, but the help output should always use
-    // the `codexrouter` command name that users run.
-    bin_name = "codexrouter",
-    override_usage = "codexrouter [OPTIONS] [PROMPT]\n       codexrouter [OPTIONS] <COMMAND> [ARGS]"
+    // the `coder` command name that users run.
+    bin_name = "coder",
+    override_usage = "coder [OPTIONS] [PROMPT]\n       coder [OPTIONS] <COMMAND> [ARGS]"
 )]
 struct MultitoolCli {
     #[clap(flatten)]
@@ -179,7 +179,7 @@ enum Subcommand {
 }
 
 #[derive(Debug, Parser)]
-#[command(bin_name = "codexrouter plugin")]
+#[command(bin_name = "coder plugin")]
 struct PluginCli {
     #[clap(flatten)]
     pub config_overrides: CliConfigOverrides,
@@ -362,7 +362,7 @@ struct LoginCommand {
 
     #[arg(
         long = "with-api-key",
-        help = "Read the API key from stdin (e.g. `printenv OPENAI_API_KEY | codex login --with-api-key`)"
+        help = "Read the API key from stdin (e.g. `printenv OPENAI_API_KEY | coder login --with-api-key`)"
     )]
     with_api_key: bool,
 
@@ -956,7 +956,7 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
                         .await;
                     } else if login_cli.api_key.is_some() {
                         eprintln!(
-                            "The --api-key flag is no longer supported. Pipe the key instead, e.g. `printenv OPENAI_API_KEY | codex login --with-api-key`."
+                            "The --api-key flag is no longer supported. Pipe the key instead, e.g. `printenv OPENAI_API_KEY | coder login --with-api-key`."
                         );
                         std::process::exit(1);
                     } else if login_cli.with_api_key {
@@ -1454,12 +1454,12 @@ fn reject_remote_mode_for_subcommand(
 ) -> anyhow::Result<()> {
     if let Some(remote) = remote {
         anyhow::bail!(
-            "`--remote {remote}` is only supported for interactive TUI commands, not `codex {subcommand}`"
+            "`--remote {remote}` is only supported for interactive TUI commands, not `coder {subcommand}`"
         );
     }
     if remote_auth_token_env.is_some() {
         anyhow::bail!(
-            "`--remote-auth-token-env` is only supported for interactive TUI commands, not `codex {subcommand}`"
+            "`--remote-auth-token-env` is only supported for interactive TUI commands, not `coder {subcommand}`"
         );
     }
     Ok(())
@@ -1565,7 +1565,7 @@ fn confirm(prompt: &str) -> std::io::Result<bool> {
     Ok(answer.eq_ignore_ascii_case("y") || answer.eq_ignore_ascii_case("yes"))
 }
 
-/// Build the final `TuiCli` for a `codexrouter resume` invocation.
+/// Build the final `TuiCli` for a `coder resume` invocation.
 fn finalize_resume_interactive(
     mut interactive: TuiCli,
     root_config_overrides: CliConfigOverrides,
@@ -1576,7 +1576,7 @@ fn finalize_resume_interactive(
     resume_cli: TuiCli,
 ) -> TuiCli {
     // Start with the parsed interactive CLI so resume shares the same
-    // configuration surface area as `codex` without additional flags.
+    // configuration surface area as `coder` without additional flags.
     let resume_session_id = session_id;
     interactive.resume_picker = resume_session_id.is_none() && !last;
     interactive.resume_last = last;
@@ -1593,7 +1593,7 @@ fn finalize_resume_interactive(
     interactive
 }
 
-/// Build the final `TuiCli` for a `codexrouter fork` invocation.
+/// Build the final `TuiCli` for a `coder fork` invocation.
 fn finalize_fork_interactive(
     mut interactive: TuiCli,
     root_config_overrides: CliConfigOverrides,
@@ -1603,7 +1603,7 @@ fn finalize_fork_interactive(
     fork_cli: TuiCli,
 ) -> TuiCli {
     // Start with the parsed interactive CLI so fork shares the same
-    // configuration surface area as `codex` without additional flags.
+    // configuration surface area as `coder` without additional flags.
     let fork_session_id = session_id;
     interactive.fork_picker = fork_session_id.is_none() && !last;
     interactive.fork_last = last;
@@ -1619,7 +1619,7 @@ fn finalize_fork_interactive(
     interactive
 }
 
-/// Merge flags provided to `codexrouter resume`/`codexrouter fork` so they take precedence over any
+/// Merge flags provided to `coder resume`/`coder fork` so they take precedence over any
 /// root-level flags. Only overrides fields explicitly set on the subcommand-scoped
 /// CLI. Also appends `-c key=value` overrides with highest precedence.
 fn merge_interactive_cli_flags(interactive: &mut TuiCli, subcommand_cli: TuiCli) {
@@ -1653,7 +1653,7 @@ fn merge_interactive_cli_flags(interactive: &mut TuiCli, subcommand_cli: TuiCli)
 
 fn print_completion(cmd: CompletionCommand) {
     let mut app = MultitoolCli::command();
-    let name = "codex";
+    let name = "coder";
     generate(cmd.shell, &mut app, name, &mut std::io::stdout());
 }
 
@@ -1841,7 +1841,7 @@ mod tests {
         let help = MultitoolCli::command().render_help().to_string();
         assert!(!help.contains("responses"));
 
-        let cli = MultitoolCli::try_parse_from(["codexrouter", "responses"]).expect("parse");
+        let cli = MultitoolCli::try_parse_from(["coder", "responses"]).expect("parse");
         assert!(matches!(cli.subcommand, Some(Subcommand::Responses(_))));
     }
 
@@ -1853,19 +1853,18 @@ mod tests {
 
     #[test]
     fn plugin_marketplace_help_uses_plugin_namespace() {
-        let help = help_from_args(&["codexrouter", "plugin", "marketplace", "--help"]);
+        let help = help_from_args(&["coder", "plugin", "marketplace", "--help"]);
         assert!(
-            help.contains("Usage: codexrouter plugin marketplace [OPTIONS] <COMMAND>"),
+            help.contains("Usage: coder plugin marketplace [OPTIONS] <COMMAND>"),
             "{help}"
         );
 
         for (subcommand, usage) in [
-            ("add", "Usage: codexrouter plugin marketplace add"),
-            ("upgrade", "Usage: codexrouter plugin marketplace upgrade"),
-            ("remove", "Usage: codexrouter plugin marketplace remove"),
+            ("add", "Usage: coder plugin marketplace add"),
+            ("upgrade", "Usage: coder plugin marketplace upgrade"),
+            ("remove", "Usage: coder plugin marketplace remove"),
         ] {
-            let help =
-                help_from_args(&["codexrouter", "plugin", "marketplace", subcommand, "--help"]);
+            let help = help_from_args(&["coder", "plugin", "marketplace", subcommand, "--help"]);
             assert!(help.contains(usage), "{help}");
         }
     }
@@ -1953,7 +1952,7 @@ mod tests {
             lines,
             vec![
                 "Token usage: total=2 input=0 output=2".to_string(),
-                "To continue this session, run codexrouter resume 123e4567-e89b-12d3-a456-426614174000"
+                "To continue this session, run coder resume 123e4567-e89b-12d3-a456-426614174000"
                     .to_string(),
             ]
         );
@@ -1981,7 +1980,7 @@ mod tests {
             lines,
             vec![
                 "Token usage: total=2 input=0 output=2".to_string(),
-                "To continue this session, run codexrouter resume 123e4567-e89b-12d3-a456-426614174000"
+                "To continue this session, run coder resume 123e4567-e89b-12d3-a456-426614174000"
                     .to_string(),
             ]
         );

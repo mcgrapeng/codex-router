@@ -10,7 +10,7 @@ pushd "$SCRIPT_DIR/.." >> /dev/null || {
 }
 pnpm install
 pnpm run build
-rm -f ./dist/zhang3f-codexrouter-*.tgz ./dist/codexrouter.tgz
+rm -f ./dist/zhang3f-codexrouter-*.tgz ./dist/coder.tgz
 pnpm pack --pack-destination ./dist
 shopt -s nullglob
 tarballs=(./dist/zhang3f-codexrouter-*.tgz)
@@ -18,5 +18,5 @@ if (( ${#tarballs[@]} != 1 )); then
   echo "Error: expected one Codex Router npm tarball, found ${#tarballs[@]}" >&2
   exit 1
 fi
-mv "${tarballs[0]}" ./dist/codexrouter.tgz
+mv "${tarballs[0]}" ./dist/coder.tgz
 docker build -t codex -f "./Dockerfile" .

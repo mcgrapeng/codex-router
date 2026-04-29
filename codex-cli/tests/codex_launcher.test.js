@@ -62,7 +62,7 @@ function runLauncher(extraEnv = {}) {
   const packageRoot = path.join(tempRoot, "package");
   const binDir = path.join(packageRoot, "bin");
   mkdirSync(binDir, { recursive: true });
-  copyFileSync(path.join(__dirname, "..", "bin", "codex.js"), path.join(binDir, "codex.js"));
+  copyFileSync(path.join(__dirname, "..", "bin", "coder.js"), path.join(binDir, "coder.js"));
 
   const binaryPath = path.join(packageRoot, "vendor", targetTriple, "codex", "codex");
   mkdirSync(path.dirname(binaryPath), { recursive: true });
@@ -97,7 +97,7 @@ function runLauncher(extraEnv = {}) {
   delete env.CODEXROUTER_HOME;
   Object.assign(env, extraEnv);
 
-  const result = spawnSync(process.execPath, [path.join(binDir, "codex.js")], {
+  const result = spawnSync(process.execPath, [path.join(binDir, "coder.js")], {
     env,
     encoding: "utf8",
   });
@@ -157,7 +157,7 @@ test("postinstall creates the default Codex Router home without touching .codex"
 
   const result = spawnSync(
     process.execPath,
-    [path.join(__dirname, "..", "bin", "codexrouter-init.js")],
+    [path.join(__dirname, "..", "bin", "coder-init.js")],
     {
       env,
       encoding: "utf8",

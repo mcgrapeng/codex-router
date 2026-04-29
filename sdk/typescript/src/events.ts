@@ -70,7 +70,7 @@ export type ThreadErrorEvent = {
   message: string;
 };
 
-/** Top-level JSONL events emitted by codexrouter exec. */
+/** Top-level JSONL events emitted by coder exec. */
 export type ThreadEvent =
   | ThreadStartedEvent
   | TurnStartedEvent

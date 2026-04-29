@@ -3,10 +3,10 @@
   "version": "0.0.0-dev",
   "license": "Apache-2.0",
   "bin": {
-    "codexrouter": "bin/codex.js"
+    "coder": "bin/coder.js"
   },
   "scripts": {
-    "postinstall": "node bin/codexrouter-init.js"
+    "postinstall": "node bin/coder-init.js"
   },
   "type": "module",
   "engines": {

@@ -15,11 +15,12 @@ REPO_ROOT = CODEX_CLI_ROOT.parent
 RESPONSES_API_PROXY_NPM_ROOT = REPO_ROOT / "codex-rs" / "responses-api-proxy" / "npm"
 CODEX_SDK_ROOT = REPO_ROOT / "sdk" / "typescript"
 CODEX_NPM_NAME = "@zhang3f/codexrouter"
-CODEX_NPM_BIN_NAME = "codexrouter"
-CODEX_NPM_INIT_SCRIPT = "codexrouter-init.js"
+CODEX_NPM_BIN_NAME = "coder"
+CODEX_NPM_LAUNCHER_SCRIPT = "coder.js"
+CODEX_NPM_INIT_SCRIPT = "coder-init.js"
 
 # `npm_name` is the actual platform package published to npm and consumed by
-# `bin/codex.js`.
+# `bin/coder.js`.
 CODEX_PLATFORM_PACKAGES: dict[str, dict[str, str]] = {
     "codex-linux-x64": {
         "npm_name": "@zhang3f/codexrouter-linux-x64",
@@ -187,8 +188,8 @@ def main() -> int:
                 print(
                     f"Staged version {version} for release in {staging_dir_str}\n\n"
                     "Verify the CLI:\n"
-                    f"    node {staging_dir_str}/bin/codex.js --version\n"
-                    f"    node {staging_dir_str}/bin/codex.js --help\n\n"
+                    f"    node {staging_dir_str}/bin/{CODEX_NPM_LAUNCHER_SCRIPT} --version\n"
+                    f"    node {staging_dir_str}/bin/{CODEX_NPM_LAUNCHER_SCRIPT} --help\n\n"
                 )
             elif package == "codex-responses-api-proxy":
                 print(
@@ -242,7 +243,10 @@ def stage_sources(staging_dir: Path, version: str, package: str) -> None:
     if package == "codex":
         bin_dir = staging_dir / "bin"
         bin_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(CODEX_CLI_ROOT / "bin" / "codex.js", bin_dir / "codex.js")
+        shutil.copy2(
+            CODEX_CLI_ROOT / "bin" / CODEX_NPM_LAUNCHER_SCRIPT,
+            bin_dir / CODEX_NPM_LAUNCHER_SCRIPT,
+        )
         shutil.copy2(
             CODEX_CLI_ROOT / "bin" / CODEX_NPM_INIT_SCRIPT,
             bin_dir / CODEX_NPM_INIT_SCRIPT,
@@ -309,7 +313,7 @@ def stage_sources(staging_dir: Path, version: str, package: str) -> None:
 
     if package == "codex":
         package_json["name"] = CODEX_NPM_NAME
-        package_json["bin"] = {CODEX_NPM_BIN_NAME: "bin/codex.js"}
+        package_json["bin"] = {CODEX_NPM_BIN_NAME: f"bin/{CODEX_NPM_LAUNCHER_SCRIPT}"}
         scripts = package_json.get("scripts")
         if not isinstance(scripts, dict):
             scripts = {}

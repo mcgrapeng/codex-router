@@ -12,8 +12,8 @@ pub struct Cli {
     #[arg(value_name = "PROMPT", value_hint = clap::ValueHint::Other)]
     pub prompt: Option<String>,
 
-    // Internal controls set by the top-level `codexrouter resume` subcommand.
-    // These are not exposed as user flags on the base `codexrouter` command.
+    // Internal controls set by the top-level `coder resume` subcommand.
+    // These are not exposed as user flags on the base `coder` command.
     #[clap(skip)]
     pub resume_picker: bool,
 
@@ -21,7 +21,7 @@ pub struct Cli {
     pub resume_last: bool,
 
     /// Internal: resume a specific recorded session by id (UUID). Set by the
-    /// top-level `codexrouter resume <SESSION_ID>` wrapper; not exposed as a public flag.
+    /// top-level `coder resume <SESSION_ID>` wrapper; not exposed as a public flag.
     #[clap(skip)]
     pub resume_session_id: Option<String>,
 
@@ -33,8 +33,8 @@ pub struct Cli {
     #[clap(skip)]
     pub resume_include_non_interactive: bool,
 
-    // Internal controls set by the top-level `codexrouter fork` subcommand.
-    // These are not exposed as user flags on the base `codexrouter` command.
+    // Internal controls set by the top-level `coder fork` subcommand.
+    // These are not exposed as user flags on the base `coder` command.
     #[clap(skip)]
     pub fork_picker: bool,
 
@@ -42,7 +42,7 @@ pub struct Cli {
     pub fork_last: bool,
 
     /// Internal: fork a specific recorded session by id (UUID). Set by the
-    /// top-level `codexrouter fork <SESSION_ID>` wrapper; not exposed as a public flag.
+    /// top-level `coder fork <SESSION_ID>` wrapper; not exposed as a public flag.
     #[clap(skip)]
     pub fork_session_id: Option<String>,
 

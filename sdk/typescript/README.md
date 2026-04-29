@@ -1,8 +1,8 @@
-# Codex SDK
+# Codex Router SDK
 
 Embed the Codex Router agent in your workflows and apps.
 
-The TypeScript SDK wraps the `codexrouter` CLI from `@zhang3f/codexrouter`. It spawns the CLI and exchanges JSONL events over stdin/stdout.
+The TypeScript SDK wraps the `coder` CLI from `@zhang3f/codexrouter`. It spawns the CLI and exchanges JSONL events over stdin/stdout.
 
 ## Installation
 
@@ -107,7 +107,7 @@ await thread.run("Implement the fix");
 
 ### Working directory controls
 
-Codex runs in the current working directory by default. To avoid unrecoverable errors, Codex requires the working directory to be a Git repository. You can skip the Git repository check by passing the `skipGitRepoCheck` option when creating a thread.
+Codex Router runs in the current working directory by default. To avoid unrecoverable errors, Codex Router requires the working directory to be a Git repository. You can skip the Git repository check by passing the `skipGitRepoCheck` option when creating a thread.
 
 ```typescript
 const thread = codex.startThread({

@@ -64,7 +64,7 @@ function Get-ReleaseAssetMetadata {
     $release = Invoke-RestMethod -Uri "https://api.github.com/repos/openai/codex/releases/tags/rust-v$ResolvedVersion"
     $asset = $release.assets | Where-Object { $_.name -eq $AssetName } | Select-Object -First 1
     if ($null -eq $asset) {
-        throw "Could not find release asset $AssetName for Codex $ResolvedVersion."
+        throw "Could not find release asset $AssetName for Codex Router $ResolvedVersion."
     }
 
     $digestMatch = [regex]::Match([string]$asset.digest, "^sha256:([0-9a-fA-F]{64})$")
@@ -86,7 +86,7 @@ function Test-ArchiveDigest {
 
     $actualDigest = (Get-FileHash -LiteralPath $ArchivePath -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($actualDigest -ne $ExpectedDigest) {
-        throw "Downloaded Codex archive checksum did not match release metadata. Expected $ExpectedDigest but got $actualDigest."
+        throw "Downloaded Codex Router archive checksum did not match release metadata. Expected $ExpectedDigest but got $actualDigest."
     }
 }
 
@@ -156,7 +156,7 @@ function Resolve-Version {
 
     $release = Invoke-RestMethod -Uri "https://api.github.com/repos/openai/codex/releases/latest"
     if (-not $release.tag_name) {
-        Write-Error "Failed to resolve the latest Codex release version."
+        Write-Error "Failed to resolve the latest Codex Router release version."
         exit 1
     }
 
@@ -189,6 +189,11 @@ function Get-CurrentInstalledVersion {
     param(
         [string]$StandaloneCurrentDir
     )
+
+    $standaloneVersion = Get-VersionFromBinary -CodexPath (Join-Path $StandaloneCurrentDir "coder.exe")
+    if (-not [string]::IsNullOrWhiteSpace($standaloneVersion)) {
+        return $standaloneVersion
+    }
 
     $standaloneVersion = Get-VersionFromBinary -CodexPath (Join-Path $StandaloneCurrentDir "codexrouter.exe")
     if (-not [string]::IsNullOrWhiteSpace($standaloneVersion)) {
@@ -257,9 +262,9 @@ function Move-OldStandaloneBinIfApproved {
         return $null
     }
 
-    Write-Step "We found an older Codex install at $VisibleBinDir"
-    Write-WarningStep "To continue, Codex needs to update the install at this path."
-    if (-not (Prompt-YesNo "Replace it with the current Codex setup now?")) {
+    Write-Step "We found an older Codex Router install at $VisibleBinDir"
+    Write-WarningStep "To continue, Codex Router needs to update the install at this path."
+    if (-not (Prompt-YesNo "Replace it with the current Codex Router setup now?")) {
         throw "Cannot replace older standalone install without confirmation: $VisibleBinDir"
     }
 
@@ -466,7 +471,7 @@ function Test-ReleaseIsComplete {
     }
 
     $expectedFiles = @(
-        "codexrouter.exe",
+        "coder.exe",
         "codex.exe",
         "codex-resources\codex-command-runner.exe",
         "codex-resources\codex-windows-sandbox-setup.exe",
@@ -481,8 +486,8 @@ function Test-ReleaseIsComplete {
     return (Split-Path -Leaf $ReleaseDir) -eq "$ExpectedVersion-$ExpectedTarget"
 }
 
-function Get-ExistingCodexCommand {
-    $existing = Get-Command codexrouter -ErrorAction SilentlyContinue
+function Get-ExistingCoderCommand {
+    $existing = Get-Command coder -ErrorAction SilentlyContinue
     if ($null -eq $existing) {
         return $null
     }
@@ -520,14 +525,14 @@ function Get-ConflictingInstall {
         [string]$VisibleBinDir
     )
 
-    $existingPath = Get-ExistingCodexCommand
+    $existingPath = Get-ExistingCoderCommand
     $manager = Get-ExistingCodexManager -ExistingPath $existingPath -VisibleBinDir $VisibleBinDir
     if ($null -eq $manager) {
         return $null
     }
 
     Write-Step "Detected existing $manager-managed Codex Router at $existingPath"
-    Write-WarningStep "Multiple managed Codex Router installs can be ambiguous because PATH order decides which codexrouter runs."
+    Write-WarningStep "Multiple managed Codex Router installs can be ambiguous because PATH order decides which coder runs."
 
     return [PSCustomObject]@{
         Manager = $manager
@@ -561,7 +566,7 @@ function Maybe-HandleConflictingInstall {
             Write-WarningStep "Failed to uninstall the existing $manager-managed Codex Router. Continuing with the standalone install."
         }
     } else {
-        Write-WarningStep "Leaving the existing $manager-managed Codex Router installed. PATH order will determine which codexrouter runs."
+        Write-WarningStep "Leaving the existing $manager-managed Codex Router installed. PATH order will determine which coder runs."
     }
 }
 
@@ -570,7 +575,7 @@ function Test-VisibleCodexCommand {
         [string]$VisibleBinDir
     )
 
-    $codexCommand = Join-Path $VisibleBinDir "codexrouter.exe"
+    $codexCommand = Join-Path $VisibleBinDir "coder.exe"
     & $codexCommand --version *> $null
     if ($LASTEXITCODE -ne 0) {
         throw "Installed Codex Router command failed verification: $codexCommand --version"
@@ -583,7 +588,7 @@ if ($env:OS -ne "Windows_NT") {
 }
 
 if (-not [Environment]::Is64BitOperatingSystem) {
-    Write-Error "Codex requires a 64-bit version of Windows."
+    Write-Error "Codex Router requires a 64-bit version of Windows."
     exit 1
 }
 
@@ -677,7 +682,7 @@ try {
             $resourcesDir = Join-Path $stagingDir "codex-resources"
             New-Item -ItemType Directory -Force -Path $resourcesDir | Out-Null
             $copyMap = @(
-                @{ Source = "codex/codex.exe"; Destination = "codexrouter.exe" },
+                @{ Source = "codex/codex.exe"; Destination = "coder.exe" },
                 @{ Source = "codex/codex.exe"; Destination = "codex.exe" },
                 @{ Source = "codex/codex-command-runner.exe"; Destination = "codex-resources\codex-command-runner.exe" },
                 @{ Source = "codex/codex-windows-sandbox-setup.exe"; Destination = "codex-resources\codex-windows-sandbox-setup.exe" },
@@ -746,11 +751,11 @@ if (-not (Path-Contains -PathValue $env:Path -Entry $visibleBinDir)) {
     }
 }
 
-Write-Step "Current PowerShell session: codexrouter"
-Write-Step "Future PowerShell windows: open a new PowerShell window and run: codexrouter"
+Write-Step "Current PowerShell session: coder"
+Write-Step "Future PowerShell windows: open a new PowerShell window and run: coder"
 Write-Host "Codex Router $resolvedVersion installed successfully."
 
-$codexCommand = Join-Path $visibleBinDir "codexrouter.exe"
+$codexCommand = Join-Path $visibleBinDir "coder.exe"
 if (Prompt-YesNo "Start Codex Router now?") {
     Write-Step "Launching Codex Router"
     & $codexCommand

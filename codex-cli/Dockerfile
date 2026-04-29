@@ -39,8 +39,8 @@ ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
 ENV PATH=$PATH:/usr/local/share/npm-global/bin
 
 # Install Codex Router
-COPY dist/codexrouter.tgz codexrouter.tgz
-RUN npm install -g codexrouter.tgz \
+COPY dist/coder.tgz coder.tgz
+RUN npm install -g coder.tgz \
   && npm cache clean --force \
   && rm -rf /usr/local/share/npm-global/lib/node_modules/@zhang3f/codexrouter/node_modules/.cache \
   && rm -rf /usr/local/share/npm-global/lib/node_modules/@zhang3f/codexrouter/tests \

@@ -4,9 +4,9 @@
   <img src="https://github.com/openai/codex/blob/main/.github/codex-cli-splash.png" alt="Codex Router CLI splash" width="80%" />
 </p>
 </br>
-If you want Codex in your code editor (VS Code, Cursor, Windsurf), <a href="https://developers.openai.com/codex/ide">install in your IDE.</a>
-</br>If you want the desktop app experience, run <code>codexrouter app</code> or visit <a href="https://chatgpt.com/codex?app-landing-page=true">the Codex Router App page</a>.
-</br>If you are looking for the <em>cloud-based agent</em> from OpenAI, <strong>Codex Web</strong>, go to <a href="https://chatgpt.com/codex">chatgpt.com/codex</a>.</p>
+If you want Codex Router in your code editor (VS Code, Cursor, Windsurf), <a href="https://developers.openai.com/codex/ide">install in your IDE.</a>
+</br>If you want the desktop app experience, run <code>coder app</code> or visit <a href="https://chatgpt.com/codex?app-landing-page=true">the Codex Router App page</a>.
+</br>If you are looking for the <em>cloud-based agent</em> from OpenAI, go to <a href="https://chatgpt.com/codex">chatgpt.com/codex</a>.</p>
 
 ---
 
@@ -21,9 +21,9 @@ Install globally with your preferred package manager:
 npm install -g @zhang3f/codexrouter
 ```
 
-Then simply run `codexrouter` to get started. The npm package creates and uses
-only `~/.codexrouter` by default so it stays isolated from any existing Codex
-CLI configuration.
+Then simply run `coder` to get started. The npm package creates and uses
+only `~/.codexrouter` by default so it stays isolated from any existing
+`~/.codex` CLI configuration.
 
 <details>
 <summary>You can also go to the <a href="https://github.com/openai/codex/releases/latest">latest GitHub Release</a> and download the appropriate binary for your platform.</summary>
@@ -41,15 +41,15 @@ Each archive contains a single entry with the platform baked into the name (e.g.
 
 </details>
 
-### Using Codex with your ChatGPT plan
+### Using Codex Router with your ChatGPT plan
 
-Run `codexrouter` and select **Sign in with ChatGPT**. We recommend signing into your ChatGPT account to use Codex Router as part of your Plus, Pro, Business, Edu, or Enterprise plan. [Learn more about what's included in your ChatGPT plan](https://help.openai.com/en/articles/11369540-codex-in-chatgpt).
+Run `coder` and select **Sign in with ChatGPT**. We recommend signing into your ChatGPT account to use Codex Router as part of your Plus, Pro, Business, Edu, or Enterprise plan. [Learn more about what's included in your ChatGPT plan](https://help.openai.com/en/articles/11369540-codex-in-chatgpt).
 
-You can also use Codex with an API key, but this requires [additional setup](https://developers.openai.com/codex/auth#sign-in-with-an-api-key).
+You can also use Codex Router with an API key, but this requires [additional setup](https://developers.openai.com/codex/auth#sign-in-with-an-api-key).
 
 ## Docs
 
-- [**Codex Documentation**](https://developers.openai.com/codex)
+- [**Codex Router Documentation**](https://developers.openai.com/codex)
 - [**Contributing**](./docs/contributing.md)
 - [**Installing & building**](./docs/install.md)
 - [**Open source fund**](./docs/open-source-fund.md)

@@ -19,7 +19,7 @@ SPEC.loader.exec_module(build_npm_package)
 
 
 class BuildNpmPackageTests(unittest.TestCase):
-    def test_codex_meta_package_uses_codexrouter_names_and_home_init(self) -> None:
+    def test_codex_meta_package_uses_coder_command_and_home_init(self) -> None:
         version = "0.0.0-test"
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -28,14 +28,15 @@ class BuildNpmPackageTests(unittest.TestCase):
 
             package_json = json.loads((staging_dir / "package.json").read_text())
             self.assertEqual(package_json["name"], "@zhang3f/codexrouter")
-            self.assertEqual(package_json["bin"], {"codexrouter": "bin/codex.js"})
+            self.assertEqual(package_json["bin"], {"coder": "bin/coder.js"})
             self.assertEqual(
                 package_json["scripts"]["postinstall"],
-                "node bin/codexrouter-init.js",
+                "node bin/coder-init.js",
             )
             self.assertEqual(package_json["files"], ["bin"])
-            self.assertTrue((staging_dir / "bin" / "codex.js").is_file())
-            self.assertTrue((staging_dir / "bin" / "codexrouter-init.js").is_file())
+            self.assertTrue((staging_dir / "bin" / "coder.js").is_file())
+            self.assertTrue((staging_dir / "bin" / "coder-init.js").is_file())
+            self.assertFalse((staging_dir / "bin" / "codexrouter-init.js").exists())
 
             optional_deps = package_json["optionalDependencies"]
             self.assertTrue(optional_deps)

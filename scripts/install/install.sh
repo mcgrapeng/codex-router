@@ -5,7 +5,7 @@ set -eu
 RELEASE="latest"
 
 BIN_DIR="${CODEX_INSTALL_DIR:-$HOME/.local/bin}"
-BIN_PATH="$BIN_DIR/codexrouter"
+BIN_PATH="$BIN_DIR/coder"
 CODEX_HOME_DIR="${CODEXROUTER_HOME:-$HOME/.codexrouter}"
 STANDALONE_ROOT="$CODEX_HOME_DIR/packages/standalone"
 RELEASES_DIR="$STANDALONE_ROOT/releases"
@@ -103,7 +103,7 @@ download_text() {
     return
   fi
 
-  echo "curl or wget is required to install Codex." >&2
+  echo "curl or wget is required to install Codex Router." >&2
   exit 1
 }
 
@@ -183,7 +183,7 @@ file_sha256() {
     return
   fi
 
-  echo "sha256sum, shasum, or openssl is required to verify the Codex download." >&2
+  echo "sha256sum, shasum, or openssl is required to verify the Codex Router download." >&2
   exit 1
 }
 
@@ -193,7 +193,7 @@ verify_archive_digest() {
   actual_digest="$(file_sha256 "$archive_path")"
 
   if [ "$actual_digest" != "$expected_digest" ]; then
-    echo "Downloaded Codex archive checksum did not match release metadata." >&2
+    echo "Downloaded Codex Router archive checksum did not match release metadata." >&2
     echo "expected: $expected_digest" >&2
     echo "actual:   $actual_digest" >&2
     exit 1
@@ -202,7 +202,7 @@ verify_archive_digest() {
 
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
-    echo "$1 is required to install Codex." >&2
+    echo "$1 is required to install Codex Router." >&2
     exit 1
   fi
 }
@@ -219,7 +219,7 @@ resolve_version() {
   resolved="$(printf '%s\n' "$release_json" | sed -n 's/.*"tag_name":[[:space:]]*"rust-v\([^"]*\)".*/\1/p' | head -n 1)"
 
   if [ -z "$resolved" ]; then
-    echo "Failed to resolve the latest Codex release version." >&2
+    echo "Failed to resolve the latest Codex Router release version." >&2
     exit 1
   fi
 
@@ -260,8 +260,8 @@ add_to_path() {
 
   profile="$(pick_profile)"
   path_profile="$profile"
-  begin_marker="# >>> Codex installer >>>"
-  end_marker="# <<< Codex installer <<<"
+  begin_marker="# >>> Codex Router installer >>>"
+  end_marker="# <<< Codex Router installer <<<"
   path_line="export PATH=\"$BIN_DIR:\$PATH\""
 
   if [ -f "$profile" ] && grep -F "$begin_marker" "$profile" >/dev/null 2>&1; then
@@ -406,7 +406,7 @@ cleanup_stale_install_artifacts() {
   find "$STANDALONE_ROOT" -mindepth 1 -maxdepth 1 -name '.current.*' -exec rm -f {} +
 
   if [ -d "$BIN_DIR" ]; then
-    find "$BIN_DIR" -mindepth 1 -maxdepth 1 -name '.codex.*' -exec rm -f {} +
+    find "$BIN_DIR" -mindepth 1 -maxdepth 1 -name '.coder.*' -exec rm -f {} +
   fi
 }
 
@@ -450,11 +450,11 @@ current_installed_version() {
   return 0
 }
 
-resolve_existing_codexrouter() {
-  command -v codexrouter 2>/dev/null || true
+resolve_existing_coder() {
+  command -v coder 2>/dev/null || true
 }
 
-classify_existing_codexrouter() {
+classify_existing_coder() {
   existing_path="$1"
 
   if [ -z "$existing_path" ] || [ "$existing_path" = "$BIN_PATH" ]; then
@@ -515,23 +515,23 @@ prompt_yes_no() {
 print_launch_instructions() {
   case "$path_action" in
     added)
-      step "Current terminal: export PATH=\"$BIN_DIR:\$PATH\" && codexrouter"
-      step "Future terminals: open a new terminal and run: codexrouter"
+      step "Current terminal: export PATH=\"$BIN_DIR:\$PATH\" && coder"
+      step "Future terminals: open a new terminal and run: coder"
       step "PATH was added to $path_profile"
       ;;
     updated)
-      step "Current terminal: export PATH=\"$BIN_DIR:\$PATH\" && codexrouter"
-      step "Future terminals: open a new terminal and run: codexrouter"
+      step "Current terminal: export PATH=\"$BIN_DIR:\$PATH\" && coder"
+      step "Future terminals: open a new terminal and run: coder"
       step "PATH was updated in $path_profile"
       ;;
     configured)
-      step "Current terminal: export PATH=\"$BIN_DIR:\$PATH\" && codexrouter"
-      step "Future terminals: open a new terminal and run: codexrouter"
+      step "Current terminal: export PATH=\"$BIN_DIR:\$PATH\" && coder"
+      step "Future terminals: open a new terminal and run: coder"
       step "PATH is already configured in $path_profile"
       ;;
     *)
-      step "Current terminal: codexrouter"
-      step "Future terminals: open a new terminal and run: codexrouter"
+      step "Current terminal: coder"
+      step "Future terminals: open a new terminal and run: coder"
       ;;
   esac
 }
@@ -544,8 +544,8 @@ maybe_launch_codex_now() {
 }
 
 detect_conflicting_install() {
-  existing_path="$(resolve_existing_codexrouter)"
-  manager="$(classify_existing_codexrouter "$existing_path" || true)"
+  existing_path="$(resolve_existing_coder)"
+  manager="$(classify_existing_coder "$existing_path" || true)"
 
   if [ -z "$manager" ]; then
     return
@@ -554,7 +554,7 @@ detect_conflicting_install() {
   conflict_manager="$manager"
   conflict_path="$existing_path"
   step "Detected existing $manager-managed Codex Router at $existing_path"
-  warn "Multiple managed Codex Router installs can be ambiguous because PATH order decides which codexrouter runs."
+  warn "Multiple managed Codex Router installs can be ambiguous because PATH order decides which coder runs."
 }
 
 handle_conflicting_install() {
@@ -580,7 +580,7 @@ handle_conflicting_install() {
       warn "Failed to uninstall the existing $conflict_manager-managed Codex Router. Continuing with the standalone install."
     fi
   else
-    warn "Leaving the existing $conflict_manager-managed Codex Router installed. PATH order will determine which codexrouter runs."
+    warn "Leaving the existing $conflict_manager-managed Codex Router installed. PATH order will determine which coder runs."
   fi
 }
 
@@ -623,7 +623,7 @@ update_current_link() {
 
 update_visible_command() {
   mkdir -p "$BIN_DIR"
-  tmp_link="$BIN_DIR/.codexrouter.$$"
+  tmp_link="$BIN_DIR/.coder.$$"
 
   replace_path_with_symlink "$BIN_PATH" "$CURRENT_LINK/codex" "$tmp_link"
 }

@@ -571,7 +571,7 @@ impl HistoryCell for StatusHistoryCell {
                 (None, None) => "ChatGPT".to_string(),
             },
             StatusAccountDisplay::ApiKey => {
-                "API key configured (run codexrouter login to use ChatGPT)".to_string()
+                "API key configured (run coder login to use ChatGPT)".to_string()
             }
         });
 
