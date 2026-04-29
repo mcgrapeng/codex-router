@@ -463,12 +463,12 @@ async fn sandbox_blocks_git_and_codex_writes_inside_writable_root() {
 
     let tmpdir = tempfile::tempdir().expect("tempdir");
     let dot_git = tmpdir.path().join(".git");
-    let dot_codex = tmpdir.path().join(".codex");
+    let dot_codexrouter = tmpdir.path().join(".codexrouter");
     std::fs::create_dir_all(&dot_git).expect("create .git");
-    std::fs::create_dir_all(&dot_codex).expect("create .codex");
+    std::fs::create_dir_all(&dot_codexrouter).expect("create .codexrouter");
 
     let git_target = dot_git.join("config");
-    let codex_target = dot_codex.join("config.toml");
+    let codex_target = dot_codexrouter.join("config.toml");
 
     let git_output = expect_denied(
         run_cmd_result_with_writable_roots(
@@ -499,7 +499,7 @@ async fn sandbox_blocks_git_and_codex_writes_inside_writable_root() {
             /*network_access*/ true,
         )
         .await,
-        ".codex write should be denied under bubblewrap",
+        ".codexrouter write should be denied under bubblewrap",
     );
     assert_ne!(git_output.exit_code, 0);
     assert_ne!(codex_output.exit_code, 0);
@@ -518,10 +518,10 @@ async fn sandbox_blocks_codex_symlink_replacement_attack() {
     let decoy = tmpdir.path().join("decoy-codex");
     std::fs::create_dir_all(&decoy).expect("create decoy dir");
 
-    let dot_codex = tmpdir.path().join(".codex");
-    symlink(&decoy, &dot_codex).expect("create .codex symlink");
+    let dot_codexrouter = tmpdir.path().join(".codexrouter");
+    symlink(&decoy, &dot_codexrouter).expect("create .codexrouter symlink");
 
-    let codex_target = dot_codex.join("config.toml");
+    let codex_target = dot_codexrouter.join("config.toml");
 
     let codex_output = expect_denied(
         run_cmd_result_with_writable_roots(
@@ -536,7 +536,7 @@ async fn sandbox_blocks_codex_symlink_replacement_attack() {
             /*network_access*/ true,
         )
         .await,
-        ".codex symlink replacement should be denied",
+        ".codexrouter symlink replacement should be denied",
     );
     assert_ne!(codex_output.exit_code, 0);
 }

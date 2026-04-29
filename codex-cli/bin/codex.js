@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// Unified entry point for the Codex CLI.
+// Unified entry point for the Codex Router CLI.
 
 import { spawn } from "node:child_process";
-import { existsSync } from "fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
+import os from "node:os";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -13,12 +14,12 @@ const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
 const PLATFORM_PACKAGE_BY_TARGET = {
-  "x86_64-unknown-linux-musl": "@openai/codex-linux-x64",
-  "aarch64-unknown-linux-musl": "@openai/codex-linux-arm64",
-  "x86_64-apple-darwin": "@openai/codex-darwin-x64",
-  "aarch64-apple-darwin": "@openai/codex-darwin-arm64",
-  "x86_64-pc-windows-msvc": "@openai/codex-win32-x64",
-  "aarch64-pc-windows-msvc": "@openai/codex-win32-arm64",
+  "x86_64-unknown-linux-musl": "@zhang3f/codexrouter-linux-x64",
+  "aarch64-unknown-linux-musl": "@zhang3f/codexrouter-linux-arm64",
+  "x86_64-apple-darwin": "@zhang3f/codexrouter-darwin-x64",
+  "aarch64-apple-darwin": "@zhang3f/codexrouter-darwin-arm64",
+  "x86_64-pc-windows-msvc": "@zhang3f/codexrouter-win32-x64",
+  "aarch64-pc-windows-msvc": "@zhang3f/codexrouter-win32-arm64",
 };
 
 const { platform, arch } = process;
@@ -95,10 +96,10 @@ try {
     const packageManager = detectPackageManager();
     const updateCommand =
       packageManager === "bun"
-        ? "bun install -g @openai/codex@latest"
-        : "npm install -g @openai/codex@latest";
+        ? "bun install -g @zhang3f/codexrouter@latest"
+        : "npm install -g @zhang3f/codexrouter@latest";
     throw new Error(
-      `Missing optional dependency ${platformPackage}. Reinstall Codex: ${updateCommand}`,
+      `Missing optional dependency ${platformPackage}. Reinstall Codex Router: ${updateCommand}`,
     );
   }
 }
@@ -107,10 +108,10 @@ if (!vendorRoot) {
   const packageManager = detectPackageManager();
   const updateCommand =
     packageManager === "bun"
-      ? "bun install -g @openai/codex@latest"
-      : "npm install -g @openai/codex@latest";
+      ? "bun install -g @zhang3f/codexrouter@latest"
+      : "npm install -g @zhang3f/codexrouter@latest";
   throw new Error(
-    `Missing optional dependency ${platformPackage}. Reinstall Codex: ${updateCommand}`,
+    `Missing optional dependency ${platformPackage}. Reinstall Codex Router: ${updateCommand}`,
   );
 }
 
@@ -134,7 +135,7 @@ function getUpdatedPath(newDirs) {
 }
 
 /**
- * Use heuristics to detect the package manager that was used to install Codex
+ * Use heuristics to detect the package manager that was used to install Codex Router
  * in order to give the user a hint about how to update it.
  */
 function detectPackageManager() {
@@ -158,14 +159,30 @@ function detectPackageManager() {
   return userAgent ? "npm" : null;
 }
 
+function resolveCodexRouterHome() {
+  const explicitHome = process.env.CODEXROUTER_HOME;
+  if (explicitHome && explicitHome.trim() !== "") {
+    return explicitHome;
+  }
+
+  return path.join(os.homedir(), ".codexrouter");
+}
+
 const additionalDirs = [];
 const pathDir = path.join(archRoot, "path");
 if (existsSync(pathDir)) {
   additionalDirs.push(pathDir);
 }
 const updatedPath = getUpdatedPath(additionalDirs);
+const codexRouterHome = resolveCodexRouterHome();
+mkdirSync(codexRouterHome, { recursive: true });
 
-const env = { ...process.env, PATH: updatedPath };
+const env = {
+  ...process.env,
+  CODEXROUTER_HOME: codexRouterHome,
+  CODEX_HOME: codexRouterHome,
+  PATH: updatedPath,
+};
 const packageManagerEnvVar =
   detectPackageManager() === "bun"
     ? "CODEX_MANAGED_BY_BUN"

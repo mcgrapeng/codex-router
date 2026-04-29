@@ -6,7 +6,7 @@ use tempfile::TempDir;
 fn fixture_paths() -> (TempDir, PathBuf, PathBuf) {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(".claude");
-    let codex_home = root.path().join(".codex");
+    let codex_home = root.path().join(".codexrouter");
     (root, external_agent_home, codex_home)
 }
 
@@ -95,13 +95,16 @@ async fn detect_repo_lists_agents_md_for_each_cwd() {
     fs::create_dir_all(&nested).expect("create nested");
     fs::write(repo_root.join("CLAUDE.md"), "Claude code guidance").expect("write source");
 
-    let items = service_for_paths(root.path().join(".claude"), root.path().join(".codex"))
-        .detect(ExternalAgentConfigDetectOptions {
-            include_home: false,
-            cwds: Some(vec![nested, repo_root.clone()]),
-        })
-        .await
-        .expect("detect");
+    let items = service_for_paths(
+        root.path().join(".claude"),
+        root.path().join(".codexrouter"),
+    )
+    .detect(ExternalAgentConfigDetectOptions {
+        include_home: false,
+        cwds: Some(vec![nested, repo_root.clone()]),
+    })
+    .await
+    .expect("detect");
 
     let expected = vec![
         ExternalAgentConfigMigrationItem {
@@ -133,7 +136,7 @@ async fn detect_repo_lists_agents_md_for_each_cwd() {
 async fn detect_repo_still_reports_non_plugin_items_when_home_config_is_invalid() {
     let root = TempDir::new().expect("create tempdir");
     let repo_root = root.path().join("repo");
-    let codex_home = root.path().join(".codex");
+    let codex_home = root.path().join(".codexrouter");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
     fs::create_dir_all(repo_root.join(".claude").join("skills").join("skill-a"))
         .expect("create repo skills");
@@ -176,7 +179,7 @@ async fn detect_repo_still_reports_non_plugin_items_when_home_config_is_invalid(
                 description: format!(
                     "Migrate {} into {}",
                     repo_root.join(".claude").join("settings.json").display(),
-                    repo_root.join(".codex").join("config.toml").display()
+                    repo_root.join(".codexrouter").join("config.toml").display()
                 ),
                 cwd: Some(repo_root.clone()),
                 details: None,
@@ -487,23 +490,26 @@ async fn import_repo_agents_md_rewrites_terms_and_skips_non_empty_targets() {
     )
     .expect("write target");
 
-    service_for_paths(root.path().join(".claude"), root.path().join(".codex"))
-        .import(vec![
-            ExternalAgentConfigMigrationItem {
-                item_type: ExternalAgentConfigMigrationItemType::AgentsMd,
-                description: String::new(),
-                cwd: Some(repo_root.clone()),
-                details: None,
-            },
-            ExternalAgentConfigMigrationItem {
-                item_type: ExternalAgentConfigMigrationItemType::AgentsMd,
-                description: String::new(),
-                cwd: Some(repo_with_existing_target.clone()),
-                details: None,
-            },
-        ])
-        .await
-        .expect("import");
+    service_for_paths(
+        root.path().join(".claude"),
+        root.path().join(".codexrouter"),
+    )
+    .import(vec![
+        ExternalAgentConfigMigrationItem {
+            item_type: ExternalAgentConfigMigrationItemType::AgentsMd,
+            description: String::new(),
+            cwd: Some(repo_root.clone()),
+            details: None,
+        },
+        ExternalAgentConfigMigrationItem {
+            item_type: ExternalAgentConfigMigrationItemType::AgentsMd,
+            description: String::new(),
+            cwd: Some(repo_with_existing_target.clone()),
+            details: None,
+        },
+    ])
+    .await
+    .expect("import");
 
     assert_eq!(
         fs::read_to_string(repo_root.join("AGENTS.md")).expect("read target"),
@@ -524,15 +530,18 @@ async fn import_repo_agents_md_overwrites_empty_targets() {
     fs::write(repo_root.join("CLAUDE.md"), "Claude code guidance").expect("write source");
     fs::write(repo_root.join("AGENTS.md"), " \n\t").expect("write empty target");
 
-    service_for_paths(root.path().join(".claude"), root.path().join(".codex"))
-        .import(vec![ExternalAgentConfigMigrationItem {
-            item_type: ExternalAgentConfigMigrationItemType::AgentsMd,
-            description: String::new(),
-            cwd: Some(repo_root.clone()),
-            details: None,
-        }])
-        .await
-        .expect("import");
+    service_for_paths(
+        root.path().join(".claude"),
+        root.path().join(".codexrouter"),
+    )
+    .import(vec![ExternalAgentConfigMigrationItem {
+        item_type: ExternalAgentConfigMigrationItemType::AgentsMd,
+        description: String::new(),
+        cwd: Some(repo_root.clone()),
+        details: None,
+    }])
+    .await
+    .expect("import");
 
     assert_eq!(
         fs::read_to_string(repo_root.join("AGENTS.md")).expect("read target"),
@@ -553,13 +562,16 @@ async fn detect_repo_prefers_non_empty_external_agent_agents_source() {
     )
     .expect("write dot claude source");
 
-    let items = service_for_paths(root.path().join(".claude"), root.path().join(".codex"))
-        .detect(ExternalAgentConfigDetectOptions {
-            include_home: false,
-            cwds: Some(vec![repo_root.clone()]),
-        })
-        .await
-        .expect("detect");
+    let items = service_for_paths(
+        root.path().join(".claude"),
+        root.path().join(".codexrouter"),
+    )
+    .detect(ExternalAgentConfigDetectOptions {
+        include_home: false,
+        cwds: Some(vec![repo_root.clone()]),
+    })
+    .await
+    .expect("detect");
 
     assert_eq!(
         items,
@@ -589,15 +601,18 @@ async fn import_repo_uses_non_empty_external_agent_agents_source() {
     )
     .expect("write dot claude source");
 
-    service_for_paths(root.path().join(".claude"), root.path().join(".codex"))
-        .import(vec![ExternalAgentConfigMigrationItem {
-            item_type: ExternalAgentConfigMigrationItemType::AgentsMd,
-            description: String::new(),
-            cwd: Some(repo_root.clone()),
-            details: None,
-        }])
-        .await
-        .expect("import");
+    service_for_paths(
+        root.path().join(".claude"),
+        root.path().join(".codexrouter"),
+    )
+    .import(vec![ExternalAgentConfigMigrationItem {
+        item_type: ExternalAgentConfigMigrationItemType::AgentsMd,
+        description: String::new(),
+        cwd: Some(repo_root.clone()),
+        details: None,
+    }])
+    .await
+    .expect("import");
 
     assert_eq!(
         fs::read_to_string(repo_root.join("AGENTS.md")).expect("read target"),
@@ -668,7 +683,7 @@ async fn detect_home_lists_enabled_plugins_from_settings() {
 async fn detect_repo_skips_plugins_that_are_already_configured_in_codex() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(".claude");
-    let codex_home = root.path().join(".codex");
+    let codex_home = root.path().join(".codexrouter");
     let repo_root = root.path().join("repo");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
     fs::create_dir_all(repo_root.join(".claude")).expect("create repo external agent dir");
@@ -728,7 +743,7 @@ enabled = true
 async fn detect_repo_skips_plugins_that_are_disabled_in_codex() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(".claude");
-    let codex_home = root.path().join(".codex");
+    let codex_home = root.path().join(".codexrouter");
     let repo_root = root.path().join("repo");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
     fs::create_dir_all(repo_root.join(".claude")).expect("create repo external agent dir");
@@ -771,7 +786,7 @@ enabled = false
 async fn detect_repo_skips_plugins_without_explicit_enabled_in_codex() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(".claude");
-    let codex_home = root.path().join(".codex");
+    let codex_home = root.path().join(".codexrouter");
     let repo_root = root.path().join("repo");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
     fs::create_dir_all(repo_root.join(".claude")).expect("create repo external agent dir");
@@ -826,11 +841,11 @@ async fn import_plugins_requires_details() {
 async fn detect_repo_does_not_skip_plugins_only_configured_in_project_codex() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(".claude");
-    let codex_home = root.path().join(".codex");
+    let codex_home = root.path().join(".codexrouter");
     let repo_root = root.path().join("repo");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
     fs::create_dir_all(repo_root.join(".claude")).expect("create repo external agent dir");
-    fs::create_dir_all(repo_root.join(".codex")).expect("create repo codex dir");
+    fs::create_dir_all(repo_root.join(".codexrouter")).expect("create repo codex dir");
     fs::create_dir_all(&codex_home).expect("create codex home");
     fs::write(
         repo_root.join(".claude").join("settings.json"),
@@ -847,7 +862,7 @@ async fn detect_repo_does_not_skip_plugins_only_configured_in_project_codex() {
     )
     .expect("write repo settings");
     fs::write(
-        repo_root.join(".codex").join("config.toml"),
+        repo_root.join(".codexrouter").join("config.toml"),
         r#"
 [plugins."formatter@acme-tools"]
 enabled = true
@@ -941,7 +956,7 @@ async fn detect_home_skips_plugins_with_invalid_marketplace_source() {
 async fn detect_repo_filters_plugins_against_installed_marketplace() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(".claude");
-    let codex_home = root.path().join(".codex");
+    let codex_home = root.path().join(".codexrouter");
     let repo_root = root.path().join("repo");
     let marketplace_root = codex_home.join(".tmp").join("marketplaces").join("debug");
     fs::create_dir_all(repo_root.join(".git")).expect("create git dir");
@@ -1449,7 +1464,7 @@ async fn import_plugins_infers_claude_official_marketplace_when_missing_from_set
 async fn detect_repo_supports_project_relative_external_agent_plugin_marketplace_path() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(".claude");
-    let codex_home = root.path().join(".codex");
+    let codex_home = root.path().join(".codexrouter");
     let repo_root = root.path().join("repo");
     let marketplace_root = repo_root.join("my-marketplace");
     let plugin_root = marketplace_root.join("plugins").join("cloudflare");
@@ -1527,7 +1542,7 @@ async fn detect_repo_supports_project_relative_external_agent_plugin_marketplace
 async fn import_plugins_supports_project_relative_external_agent_plugin_marketplace_path() {
     let root = TempDir::new().expect("create tempdir");
     let external_agent_home = root.path().join(".claude");
-    let codex_home = root.path().join(".codex");
+    let codex_home = root.path().join(".codexrouter");
     let repo_root = root.path().join("repo");
     let marketplace_root = repo_root.join("my-marketplace");
     let plugin_root = marketplace_root.join("plugins").join("cloudflare");

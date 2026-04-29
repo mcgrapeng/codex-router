@@ -24,7 +24,7 @@ use crate::token::get_current_token_for_restriction;
 use crate::token::get_logon_sid_bytes;
 use crate::workspace_acl::is_command_cwd_root;
 use crate::workspace_acl::protect_workspace_agents_dir;
-use crate::workspace_acl::protect_workspace_codex_dir;
+use crate::workspace_acl::protect_workspace_codexrouter_dir;
 use anyhow::Result;
 use std::collections::HashMap;
 use std::ffi::c_void;
@@ -248,7 +248,7 @@ pub(crate) fn apply_legacy_session_acl_rules(
         if let Some(psid_workspace) = psid_workspace {
             allow_null_device(psid_workspace.as_ptr());
             if persist_aces && matches!(policy, SandboxPolicy::WorkspaceWrite { .. }) {
-                let _ = protect_workspace_codex_dir(current_dir, psid_workspace.as_ptr());
+                let _ = protect_workspace_codexrouter_dir(current_dir, psid_workspace.as_ptr());
                 let _ = protect_workspace_agents_dir(current_dir, psid_workspace.as_ptr());
             }
         }

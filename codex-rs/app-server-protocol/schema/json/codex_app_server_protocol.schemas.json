@@ -2549,7 +2549,7 @@
               "$ref": "#/definitions/v2/AbsolutePathBuf"
             }
           ],
-          "description": "Absolute path to the server's $CODEX_HOME directory."
+          "description": "Absolute path to the server's $CODEXROUTER_HOME directory."
         },
         "platformFamily": {
           "description": "Platform family for the running app-server target, for example `\"unix\"` or `\"windows\"`.",
@@ -7075,7 +7075,7 @@
             "type": "object"
           },
           {
-            "description": "User config layer from $CODEX_HOME/config.toml. This layer is special in that it is expected to be: - writable by the user - generally outside the workspace directory",
+            "description": "User config layer from $CODEXROUTER_HOME/config.toml. This layer is special in that it is expected to be: - writable by the user - generally outside the workspace directory",
             "properties": {
               "file": {
                 "allOf": [
@@ -7101,9 +7101,9 @@
             "type": "object"
           },
           {
-            "description": "Path to a .codex/ folder within a project. There could be multiple of these between `cwd` and the project/repo root.",
+            "description": "Path to a .codexrouter/ folder within a project. There could be multiple of these between `cwd` and the project/repo root.",
             "properties": {
-              "dotCodexFolder": {
+              "projectConfigFolder": {
                 "$ref": "#/definitions/v2/AbsolutePathBuf"
               },
               "type": {
@@ -7115,7 +7115,7 @@
               }
             },
             "required": [
-              "dotCodexFolder",
+              "projectConfigFolder",
               "type"
             ],
             "title": "ProjectConfigLayerSource",
@@ -8210,7 +8210,7 @@
             ]
           },
           "includeHome": {
-            "description": "If true, include detection under the user's home (~/.claude, ~/.codex, etc.).",
+            "description": "If true, include detection under the user's home (~/.claude, ~/.codexrouter, etc.).",
             "type": "boolean"
           }
         },
@@ -14344,7 +14344,7 @@
                 "$ref": "#/definitions/v2/SessionSource"
               }
             ],
-            "description": "Origin of the thread (CLI, VSCode, codex exec, codex app-server, etc.)."
+            "description": "Origin of the thread (CLI, VSCode, codexrouter exec, codexrouter app-server, etc.)."
           },
           "status": {
             "allOf": [

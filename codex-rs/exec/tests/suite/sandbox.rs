@@ -362,7 +362,7 @@ async fn sandbox_distinguishes_command_and_policy_cwds() {
 }
 
 #[tokio::test]
-async fn sandbox_blocks_first_time_dot_codex_creation() {
+async fn sandbox_blocks_first_time_dot_codexrouter_creation() {
     core_test_support::skip_if_sandbox!();
     #[cfg(target_os = "linux")]
     let sandbox_env = match linux_sandbox_test_env().await {
@@ -375,8 +375,8 @@ async fn sandbox_blocks_first_time_dot_codex_creation() {
     let temp = tempfile::tempdir().expect("should be able to create temp dir");
     let repo_root = temp.path().join("repo").abs();
     create_dir_all(&repo_root).await.expect("mkdir repo");
-    let dot_codex = repo_root.join(".codex");
-    let config_toml = dot_codex.join("config.toml");
+    let dot_codexrouter = repo_root.join(".codexrouter");
+    let config_toml = dot_codexrouter.join("config.toml");
     let policy = SandboxPolicy::WorkspaceWrite {
         writable_roots: vec![],
         read_only_access: Default::default(),
@@ -389,7 +389,7 @@ async fn sandbox_blocks_first_time_dot_codex_creation() {
         vec![
             "bash".to_string(),
             "-lc".to_string(),
-            "mkdir -p .codex && echo 'sandbox_mode = \"danger-full-access\"' > .codex/config.toml"
+            "mkdir -p .codexrouter && echo 'sandbox_mode = \"danger-full-access\"' > .codexrouter/config.toml"
                 .to_string(),
         ],
         repo_root.clone(),
@@ -399,26 +399,29 @@ async fn sandbox_blocks_first_time_dot_codex_creation() {
         sandbox_env,
     )
     .await
-    .expect("should spawn command creating .codex");
+    .expect("should spawn command creating .codexrouter");
 
-    let status = child.wait().await.expect("should wait for .codex command");
+    let status = child
+        .wait()
+        .await
+        .expect("should wait for .codexrouter command");
     assert!(
         !status.success(),
-        "sandbox unexpectedly allowed first-time .codex creation: {status:?}"
+        "sandbox unexpectedly allowed first-time .codexrouter creation: {status:?}"
     );
-    let dot_codex_metadata = tokio::fs::symlink_metadata(&dot_codex).await;
-    if let Ok(metadata) = dot_codex_metadata {
+    let dot_codexrouter_metadata = tokio::fs::symlink_metadata(&dot_codexrouter).await;
+    if let Ok(metadata) = dot_codexrouter_metadata {
         assert!(
             !metadata.is_dir(),
             "{} should not be creatable as a directory",
-            dot_codex.display()
+            dot_codexrouter.display()
         );
-    } else if let Err(err) = &dot_codex_metadata {
+    } else if let Err(err) = &dot_codexrouter_metadata {
         assert_eq!(
             err.kind(),
             io::ErrorKind::NotFound,
             "unexpected metadata error for {}: {err}",
-            dot_codex.display()
+            dot_codexrouter.display()
         );
     }
     let config_toml_exists = match tokio::fs::try_exists(&config_toml).await {

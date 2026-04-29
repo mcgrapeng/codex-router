@@ -5,8 +5,8 @@ set -eu
 RELEASE="latest"
 
 BIN_DIR="${CODEX_INSTALL_DIR:-$HOME/.local/bin}"
-BIN_PATH="$BIN_DIR/codex"
-CODEX_HOME_DIR="${CODEX_HOME:-$HOME/.codex}"
+BIN_PATH="$BIN_DIR/codexrouter"
+CODEX_HOME_DIR="${CODEXROUTER_HOME:-$HOME/.codexrouter}"
 STANDALONE_ROOT="$CODEX_HOME_DIR/packages/standalone"
 RELEASES_DIR="$STANDALONE_ROOT/releases"
 CURRENT_LINK="$STANDALONE_ROOT/current"
@@ -86,7 +86,7 @@ download_file() {
     return
   fi
 
-  echo "curl or wget is required to install Codex." >&2
+  echo "curl or wget is required to install Codex Router." >&2
   exit 1
 }
 
@@ -450,11 +450,11 @@ current_installed_version() {
   return 0
 }
 
-resolve_existing_codex() {
-  command -v codex 2>/dev/null || true
+resolve_existing_codexrouter() {
+  command -v codexrouter 2>/dev/null || true
 }
 
-classify_existing_codex() {
+classify_existing_codexrouter() {
   existing_path="$1"
 
   if [ -z "$existing_path" ] || [ "$existing_path" = "$BIN_PATH" ]; then
@@ -515,37 +515,37 @@ prompt_yes_no() {
 print_launch_instructions() {
   case "$path_action" in
     added)
-      step "Current terminal: export PATH=\"$BIN_DIR:\$PATH\" && codex"
-      step "Future terminals: open a new terminal and run: codex"
+      step "Current terminal: export PATH=\"$BIN_DIR:\$PATH\" && codexrouter"
+      step "Future terminals: open a new terminal and run: codexrouter"
       step "PATH was added to $path_profile"
       ;;
     updated)
-      step "Current terminal: export PATH=\"$BIN_DIR:\$PATH\" && codex"
-      step "Future terminals: open a new terminal and run: codex"
+      step "Current terminal: export PATH=\"$BIN_DIR:\$PATH\" && codexrouter"
+      step "Future terminals: open a new terminal and run: codexrouter"
       step "PATH was updated in $path_profile"
       ;;
     configured)
-      step "Current terminal: export PATH=\"$BIN_DIR:\$PATH\" && codex"
-      step "Future terminals: open a new terminal and run: codex"
+      step "Current terminal: export PATH=\"$BIN_DIR:\$PATH\" && codexrouter"
+      step "Future terminals: open a new terminal and run: codexrouter"
       step "PATH is already configured in $path_profile"
       ;;
     *)
-      step "Current terminal: codex"
-      step "Future terminals: open a new terminal and run: codex"
+      step "Current terminal: codexrouter"
+      step "Future terminals: open a new terminal and run: codexrouter"
       ;;
   esac
 }
 
 maybe_launch_codex_now() {
-  if prompt_yes_no "Start Codex now?"; then
-    step "Launching Codex"
+  if prompt_yes_no "Start Codex Router now?"; then
+    step "Launching Codex Router"
     "$BIN_PATH"
   fi
 }
 
 detect_conflicting_install() {
-  existing_path="$(resolve_existing_codex)"
-  manager="$(classify_existing_codex "$existing_path" || true)"
+  existing_path="$(resolve_existing_codexrouter)"
+  manager="$(classify_existing_codexrouter "$existing_path" || true)"
 
   if [ -z "$manager" ]; then
     return
@@ -553,8 +553,8 @@ detect_conflicting_install() {
 
   conflict_manager="$manager"
   conflict_path="$existing_path"
-  step "Detected existing $manager-managed Codex at $existing_path"
-  warn "Multiple managed Codex installs can be ambiguous because PATH order decides which one runs."
+  step "Detected existing $manager-managed Codex Router at $existing_path"
+  warn "Multiple managed Codex Router installs can be ambiguous because PATH order decides which codexrouter runs."
 }
 
 handle_conflicting_install() {
@@ -564,23 +564,23 @@ handle_conflicting_install() {
 
   case "$conflict_manager" in
     brew)
-      uninstall_cmd="brew uninstall --cask codex"
+      uninstall_cmd="brew uninstall --cask codexrouter"
       ;;
     bun)
-      uninstall_cmd="bun remove -g @openai/codex"
+      uninstall_cmd="bun remove -g @zhang3f/codexrouter"
       ;;
     *)
-      uninstall_cmd="npm uninstall -g @openai/codex"
+      uninstall_cmd="npm uninstall -g @zhang3f/codexrouter"
       ;;
   esac
 
-  if prompt_yes_no "Uninstall the existing $conflict_manager-managed Codex now?"; then
+  if prompt_yes_no "Uninstall the existing $conflict_manager-managed Codex Router now?"; then
     step "Running: $uninstall_cmd"
     if ! sh -c "$uninstall_cmd"; then
-      warn "Failed to uninstall the existing $conflict_manager-managed Codex. Continuing with the standalone install."
+      warn "Failed to uninstall the existing $conflict_manager-managed Codex Router. Continuing with the standalone install."
     fi
   else
-    warn "Leaving the existing $conflict_manager-managed Codex installed. PATH order will determine which codex runs."
+    warn "Leaving the existing $conflict_manager-managed Codex Router installed. PATH order will determine which codexrouter runs."
   fi
 }
 
@@ -623,7 +623,7 @@ update_current_link() {
 
 update_visible_command() {
   mkdir -p "$BIN_DIR"
-  tmp_link="$BIN_DIR/.codex.$$"
+  tmp_link="$BIN_DIR/.codexrouter.$$"
 
   replace_path_with_symlink "$BIN_PATH" "$CURRENT_LINK/codex" "$tmp_link"
 }
@@ -699,11 +699,11 @@ release_dir="$RELEASES_DIR/$release_name"
 current_version="$(current_installed_version)"
 
 if [ -n "$current_version" ] && [ "$current_version" != "$resolved_version" ]; then
-  step "Updating Codex CLI from $current_version to $resolved_version"
+  step "Updating Codex Router from $current_version to $resolved_version"
 elif [ -n "$current_version" ]; then
-  step "Updating Codex CLI"
+  step "Updating Codex Router"
 else
-  step "Installing Codex CLI"
+  step "Installing Codex Router"
 fi
 step "Detected platform: $platform_label"
 step "Resolved version: $resolved_version"
@@ -730,7 +730,7 @@ if ! release_dir_is_complete "$release_dir" "$resolved_version" "$vendor_target"
   archive_path="$tmp_dir/$asset"
   extract_dir="$tmp_dir/extract"
 
-  step "Downloading Codex CLI"
+  step "Downloading Codex Router"
   expected_digest="$(release_asset_digest "$asset" "$resolved_version")"
   download_file "$download_url" "$archive_path"
   verify_archive_digest "$archive_path" "$expected_digest"
@@ -764,5 +764,5 @@ case "$path_action" in
     ;;
 esac
 
-printf 'Codex CLI %s installed successfully.\n' "$resolved_version"
+printf 'Codex Router CLI %s installed successfully.\n' "$resolved_version"
 maybe_launch_codex_now

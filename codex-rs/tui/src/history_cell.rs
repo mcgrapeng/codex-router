@@ -864,7 +864,7 @@ pub fn new_approval_decision_cell(
                 vec![
                     actor.subject().into(),
                     "persisted".bold(),
-                    " Codex network access to ".into(),
+                    " Codex Router network access to ".into(),
                     Span::from(network_policy_amendment.host).dim(),
                 ],
             ),
@@ -873,7 +873,7 @@ pub fn new_approval_decision_cell(
                 vec![
                     actor.subject().into(),
                     "denied".bold(),
-                    " codex network access to ".into(),
+                    " codex router network access to ".into(),
                     Span::from(network_policy_amendment.host).dim(),
                     " and saved that rule".into(),
                 ],
@@ -1048,7 +1048,7 @@ impl HistoryCell for CompletedMcpToolCallWithImageOutput {
     }
 }
 
-pub(crate) const SESSION_HEADER_MAX_INNER_WIDTH: usize = 56; // Just an eyeballed value
+pub(crate) const SESSION_HEADER_MAX_INNER_WIDTH: usize = crate::brand::CODEX_ROUTER_LOGO_WIDTH;
 
 pub(crate) fn card_inner_width(width: u16, max_inner_width: usize) -> Option<usize> {
     if width < 4 {
@@ -1212,7 +1212,7 @@ pub(crate) fn new_session_info(
             Line::from(vec![
                 "  ".into(),
                 "/init".into(),
-                " - create an AGENTS.md file with instructions for Codex".dim(),
+                " - create an AGENTS.md file with instructions for Codex Router".dim(),
             ]),
             Line::from(vec![
                 "  ".into(),
@@ -1222,7 +1222,7 @@ pub(crate) fn new_session_info(
             Line::from(vec![
                 "  ".into(),
                 "/permissions".into(),
-                " - choose what Codex is allowed to do".dim(),
+                " - choose what Codex Router is allowed to do".dim(),
             ]),
             Line::from(vec![
                 "  ".into(),
@@ -1383,10 +1383,10 @@ impl HistoryCell for SessionHeaderHistoryCell {
 
         let make_row = |spans: Vec<Span<'static>>| Line::from(spans);
 
-        // Title line rendered inside the box: ">_ OpenAI Codex (vX)"
+        // Title line rendered inside the box: ">_ Codex Router (vX)"
         let title_spans: Vec<Span<'static>> = vec![
             Span::from(">_ ").dim(),
-            Span::from("OpenAI Codex").bold(),
+            Span::from("Codex Router").bold(),
             Span::from(" ").dim(),
             Span::from(format!("(v{})", self.version)).dim(),
         ];
@@ -1433,12 +1433,14 @@ impl HistoryCell for SessionHeaderHistoryCell {
         let dir = self.format_directory(Some(dir_max_width));
         let dir_spans = vec![Span::from(dir_prefix).dim(), Span::from(dir)];
 
-        let mut lines = vec![
+        let mut lines = crate::brand::codex_router_logo_lines(inner_width as u16);
+        lines.extend([
+            make_row(Vec::new()),
             make_row(title_spans),
             make_row(Vec::new()),
             make_row(model_spans),
             make_row(dir_spans),
-        ];
+        ]);
 
         if self.yolo_mode {
             let permissions_label = format!("{PERMISSIONS_LABEL:<label_width$}");
@@ -1772,7 +1774,7 @@ pub(crate) fn new_web_search_call(
 ///
 /// Manual testing tip:
 /// - Run the rmcp stdio test server (`codex-rs/rmcp-client/src/bin/test_stdio_server.rs`) and
-///   register it as an MCP server via `codex mcp add`.
+///   register it as an MCP server via `codexrouter mcp add`.
 /// - Use its `image_scenario` tool with cases like `text_then_image`,
 ///   `invalid_base64_then_image`, or `invalid_image_bytes_then_image` to ensure this path triggers
 ///   even when the first block is not a valid image.
@@ -4090,6 +4092,38 @@ mod tests {
 
         assert!(model_line.contains("gpt-4o high   fast"));
         assert!(model_line.contains("/model to change"));
+    }
+
+    #[test]
+    fn session_header_renders_codex_router_logo_when_wide() {
+        let cell = SessionHeaderHistoryCell::new(
+            "gpt-4o".to_string(),
+            Some(ReasoningEffortConfig::High),
+            /*show_fast_status*/ false,
+            std::env::temp_dir(),
+            "test",
+        );
+
+        let rendered = render_lines(&cell.display_lines(/*width*/ 80)).join("\n");
+
+        assert!(rendered.contains("____ ___  ____"));
+        assert!(rendered.contains("Codex Router"));
+    }
+
+    #[test]
+    fn session_header_uses_compact_logo_when_narrow() {
+        let cell = SessionHeaderHistoryCell::new(
+            "gpt-4o".to_string(),
+            Some(ReasoningEffortConfig::High),
+            /*show_fast_status*/ false,
+            std::env::temp_dir(),
+            "test",
+        );
+
+        let rendered = render_lines(&cell.display_lines(/*width*/ 40)).join("\n");
+
+        assert!(rendered.contains("codex router"));
+        assert!(!rendered.contains("____ ___  ____"));
     }
 
     #[test]

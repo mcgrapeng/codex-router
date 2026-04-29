@@ -69,7 +69,7 @@ use codex_protocol::protocol::AskForApproval;
 use codex_protocol::user_input::UserInput;
 use codex_terminal_detection::TerminalName;
 
-/// Codex CLI
+/// Codex Router CLI
 ///
 /// If no subcommand is specified, options will be forwarded to the interactive CLI.
 #[derive(Debug, Parser)]
@@ -80,9 +80,9 @@ use codex_terminal_detection::TerminalName;
     subcommand_negates_reqs = true,
     // The executable is sometimes invoked via a platform‑specific name like
     // `codex-x86_64-unknown-linux-musl`, but the help output should always use
-    // the generic `codex` command name that users run.
-    bin_name = "codex",
-    override_usage = "codex [OPTIONS] [PROMPT]\n       codex [OPTIONS] <COMMAND> [ARGS]"
+    // the `codexrouter` command name that users run.
+    bin_name = "codexrouter",
+    override_usage = "codexrouter [OPTIONS] [PROMPT]\n       codexrouter [OPTIONS] <COMMAND> [ARGS]"
 )]
 struct MultitoolCli {
     #[clap(flatten)]
@@ -103,7 +103,7 @@ struct MultitoolCli {
 
 #[derive(Debug, clap::Subcommand)]
 enum Subcommand {
-    /// Run Codex non-interactively.
+    /// Run Codex Router non-interactively.
     #[clap(visible_alias = "e")]
     Exec(ExecCli),
 
@@ -116,26 +116,26 @@ enum Subcommand {
     /// Remove stored authentication credentials.
     Logout(LogoutCommand),
 
-    /// Manage external MCP servers for Codex.
+    /// Manage external MCP servers for Codex Router.
     Mcp(McpCli),
 
-    /// Manage Codex plugins.
+    /// Manage Codex Router plugins.
     Plugin(PluginCli),
 
-    /// Start Codex as an MCP server (stdio).
+    /// Start Codex Router as an MCP server (stdio).
     McpServer,
 
     /// [experimental] Run the app server or related tooling.
     AppServer(AppServerCommand),
 
-    /// Launch the Codex desktop app (opens the app installer if missing).
+    /// Launch the Codex Router desktop app (opens the app installer if missing).
     #[cfg(any(target_os = "macos", target_os = "windows"))]
     App(app_cmd::AppCommand),
 
     /// Generate shell completion scripts.
     Completion(CompletionCommand),
 
-    /// Run commands within a Codex-provided sandbox.
+    /// Run commands within a Codex Router-provided sandbox.
     Sandbox(SandboxArgs),
 
     /// Debugging tools.
@@ -145,7 +145,7 @@ enum Subcommand {
     #[clap(hide = true)]
     Execpolicy(ExecpolicyCommand),
 
-    /// Apply the latest diff produced by Codex agent as a `git apply` to your local working tree.
+    /// Apply the latest diff produced by Codex Router agent as a `git apply` to your local working tree.
     #[clap(visible_alias = "a")]
     Apply(ApplyCommand),
 
@@ -155,7 +155,7 @@ enum Subcommand {
     /// Fork a previous interactive session (picker by default; use --last to fork the most recent).
     Fork(ForkCommand),
 
-    /// [EXPERIMENTAL] Browse tasks from Codex Cloud and apply changes locally.
+    /// [EXPERIMENTAL] Browse tasks from Codex Router Cloud and apply changes locally.
     #[clap(name = "cloud", alias = "cloud-tasks")]
     Cloud(CloudTasksCli),
 
@@ -163,7 +163,7 @@ enum Subcommand {
     #[clap(hide = true)]
     ResponsesApiProxy(ResponsesApiProxyArgs),
 
-    /// Internal: send one raw Responses API payload through Codex auth.
+    /// Internal: send one raw Responses API payload through Codex Router auth.
     #[clap(hide = true)]
     Responses(ResponsesCommand),
 
@@ -179,7 +179,7 @@ enum Subcommand {
 }
 
 #[derive(Debug, Parser)]
-#[command(bin_name = "codex plugin")]
+#[command(bin_name = "codexrouter plugin")]
 struct PluginCli {
     #[clap(flatten)]
     pub config_overrides: CliConfigOverrides,
@@ -190,7 +190,7 @@ struct PluginCli {
 
 #[derive(Debug, clap::Subcommand)]
 enum PluginSubcommand {
-    /// Manage plugin marketplaces for Codex.
+    /// Manage plugin marketplaces for Codex Router.
     Marketplace(MarketplaceCli),
 }
 
@@ -1565,7 +1565,7 @@ fn confirm(prompt: &str) -> std::io::Result<bool> {
     Ok(answer.eq_ignore_ascii_case("y") || answer.eq_ignore_ascii_case("yes"))
 }
 
-/// Build the final `TuiCli` for a `codex resume` invocation.
+/// Build the final `TuiCli` for a `codexrouter resume` invocation.
 fn finalize_resume_interactive(
     mut interactive: TuiCli,
     root_config_overrides: CliConfigOverrides,
@@ -1593,7 +1593,7 @@ fn finalize_resume_interactive(
     interactive
 }
 
-/// Build the final `TuiCli` for a `codex fork` invocation.
+/// Build the final `TuiCli` for a `codexrouter fork` invocation.
 fn finalize_fork_interactive(
     mut interactive: TuiCli,
     root_config_overrides: CliConfigOverrides,
@@ -1619,7 +1619,7 @@ fn finalize_fork_interactive(
     interactive
 }
 
-/// Merge flags provided to `codex resume`/`codex fork` so they take precedence over any
+/// Merge flags provided to `codexrouter resume`/`codexrouter fork` so they take precedence over any
 /// root-level flags. Only overrides fields explicitly set on the subcommand-scoped
 /// CLI. Also appends `-c key=value` overrides with highest precedence.
 fn merge_interactive_cli_flags(interactive: &mut TuiCli, subcommand_cli: TuiCli) {
@@ -1841,7 +1841,7 @@ mod tests {
         let help = MultitoolCli::command().render_help().to_string();
         assert!(!help.contains("responses"));
 
-        let cli = MultitoolCli::try_parse_from(["codex", "responses"]).expect("parse");
+        let cli = MultitoolCli::try_parse_from(["codexrouter", "responses"]).expect("parse");
         assert!(matches!(cli.subcommand, Some(Subcommand::Responses(_))));
     }
 
@@ -1853,18 +1853,19 @@ mod tests {
 
     #[test]
     fn plugin_marketplace_help_uses_plugin_namespace() {
-        let help = help_from_args(&["codex", "plugin", "marketplace", "--help"]);
+        let help = help_from_args(&["codexrouter", "plugin", "marketplace", "--help"]);
         assert!(
-            help.contains("Usage: codex plugin marketplace [OPTIONS] <COMMAND>"),
+            help.contains("Usage: codexrouter plugin marketplace [OPTIONS] <COMMAND>"),
             "{help}"
         );
 
         for (subcommand, usage) in [
-            ("add", "Usage: codex plugin marketplace add"),
-            ("upgrade", "Usage: codex plugin marketplace upgrade"),
-            ("remove", "Usage: codex plugin marketplace remove"),
+            ("add", "Usage: codexrouter plugin marketplace add"),
+            ("upgrade", "Usage: codexrouter plugin marketplace upgrade"),
+            ("remove", "Usage: codexrouter plugin marketplace remove"),
         ] {
-            let help = help_from_args(&["codex", "plugin", "marketplace", subcommand, "--help"]);
+            let help =
+                help_from_args(&["codexrouter", "plugin", "marketplace", subcommand, "--help"]);
             assert!(help.contains(usage), "{help}");
         }
     }
@@ -1952,7 +1953,7 @@ mod tests {
             lines,
             vec![
                 "Token usage: total=2 input=0 output=2".to_string(),
-                "To continue this session, run codex resume 123e4567-e89b-12d3-a456-426614174000"
+                "To continue this session, run codexrouter resume 123e4567-e89b-12d3-a456-426614174000"
                     .to_string(),
             ]
         );
@@ -1980,7 +1981,7 @@ mod tests {
             lines,
             vec![
                 "Token usage: total=2 input=0 output=2".to_string(),
-                "To continue this session, run codex resume 123e4567-e89b-12d3-a456-426614174000"
+                "To continue this session, run codexrouter resume 123e4567-e89b-12d3-a456-426614174000"
                     .to_string(),
             ]
         );

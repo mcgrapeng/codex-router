@@ -74,19 +74,21 @@ impl SlashCommand {
         match self {
             SlashCommand::Feedback => "send logs to maintainers",
             SlashCommand::New => "start a new chat during a conversation",
-            SlashCommand::Init => "create an AGENTS.md file with instructions for Codex",
+            SlashCommand::Init => "create an AGENTS.md file with instructions for Codex Router",
             SlashCommand::Compact => "summarize conversation to prevent hitting the context limit",
             SlashCommand::Review => "review my current changes and find issues",
             SlashCommand::Rename => "rename the current thread",
             SlashCommand::Resume => "resume a saved chat",
             SlashCommand::Clear => "clear the terminal and start a new chat",
             SlashCommand::Fork => "fork the current chat",
-            // SlashCommand::Undo => "ask Codex to undo a turn",
-            SlashCommand::Quit | SlashCommand::Exit => "exit Codex",
+            // SlashCommand::Undo => "ask Codex Router to undo a turn",
+            SlashCommand::Quit | SlashCommand::Exit => "exit Codex Router",
             SlashCommand::Copy => "copy last response as markdown",
             SlashCommand::Diff => "show git diff (including untracked files)",
             SlashCommand::Mention => "mention a file",
-            SlashCommand::Skills => "use skills to improve how Codex performs specific tasks",
+            SlashCommand::Skills => {
+                "use skills to improve how Codex Router performs specific tasks"
+            }
             SlashCommand::Status => "show current session configuration and token usage",
             SlashCommand::DebugConfig => "show config layers and requirement sources for debugging",
             SlashCommand::Title => "configure which items appear in the terminal title",
@@ -100,15 +102,15 @@ impl SlashCommand {
             SlashCommand::Fast => {
                 "toggle Fast mode to enable fastest inference with increased plan usage"
             }
-            SlashCommand::Personality => "choose a communication style for Codex",
+            SlashCommand::Personality => "choose a communication style for Codex Router",
             SlashCommand::Realtime => "toggle realtime voice mode (experimental)",
             SlashCommand::Settings => "configure realtime microphone/speaker",
             SlashCommand::Plan => "switch to Plan mode",
             SlashCommand::Collab => "change collaboration mode (experimental)",
             SlashCommand::Agent | SlashCommand::MultiAgents => "switch the active agent thread",
             SlashCommand::Side => "start a side conversation in an ephemeral fork",
-            SlashCommand::Approvals => "choose what Codex is allowed to do",
-            SlashCommand::Permissions => "choose what Codex is allowed to do",
+            SlashCommand::Approvals => "choose what Codex Router is allowed to do",
+            SlashCommand::Permissions => "choose what Codex Router is allowed to do",
             SlashCommand::ElevateSandbox => "set up elevated agent sandbox",
             SlashCommand::SandboxReadRoot => {
                 "let sandbox read a directory: /sandbox-add-read-dir <absolute_path>"
@@ -118,7 +120,7 @@ impl SlashCommand {
             SlashCommand::Mcp => "list configured MCP tools; use /mcp verbose for details",
             SlashCommand::Apps => "manage apps",
             SlashCommand::Plugins => "browse plugins",
-            SlashCommand::Logout => "log out of Codex",
+            SlashCommand::Logout => "log out of Codex Router",
             SlashCommand::Rollout => "print the rollout file path",
             SlashCommand::TestApproval => "test approval request",
         }

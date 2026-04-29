@@ -1578,7 +1578,7 @@ enabled = true
 "#,
     );
     write_file(
-        &repo_root.join(".codex/config.toml"),
+        &repo_root.join(".codexrouter/config.toml"),
         r#"[[skills.config]]
 name = "enabled-plugin:sample-search"
 enabled = false
@@ -3273,14 +3273,15 @@ async fn load_plugins_ignores_project_config_files() {
         r#"{"name":"sample"}"#,
     );
     write_file(
-        &project_root.join(".codex/config.toml"),
+        &project_root.join(".codexrouter/config.toml"),
         &plugin_config_toml(/*enabled*/ true, /*plugins_feature_enabled*/ true),
     );
 
     let stack = ConfigLayerStack::new(
         vec![ConfigLayerEntry::new(
             ConfigLayerSource::Project {
-                dot_codex_folder: AbsolutePathBuf::try_from(project_root.join(".codex")).unwrap(),
+                project_config_folder: AbsolutePathBuf::try_from(project_root.join(".codexrouter"))
+                    .unwrap(),
             },
             toml::from_str(&plugin_config_toml(
                 /*enabled*/ true, /*plugins_feature_enabled*/ true,

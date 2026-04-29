@@ -264,7 +264,7 @@
       "description": "Determine where Codex should store CLI auth credentials.",
       "oneOf": [
         {
-          "description": "Persist credentials in CODEX_HOME/auth.json.",
+          "description": "Persist credentials in CODEXROUTER_HOME/auth.json.",
           "enum": [
             "file"
           ],
@@ -278,7 +278,7 @@
           "type": "string"
         },
         {
-          "description": "Use keyring when available; otherwise, fall back to a file in CODEX_HOME.",
+          "description": "Use keyring when available; otherwise, fall back to a file in CODEXROUTER_HOME.",
           "enum": [
             "auto"
           ],
@@ -816,7 +816,7 @@
     },
     "History": {
       "additionalProperties": false,
-      "description": "Settings that govern if and what will be written to `~/.codex/history.jsonl`.",
+      "description": "Settings that govern if and what will be written to `CODEXROUTER_HOME/history.jsonl`.",
       "properties": {
         "max_bytes": {
           "description": "If set, the maximum size of the history file in bytes. The oldest entries are dropped once the file exceeds this limit.",
@@ -1490,7 +1490,7 @@
           "type": "string"
         },
         {
-          "description": "CODEX_HOME/.credentials.json This file will be readable to Codex and other applications running as the same user.",
+          "description": "CODEXROUTER_HOME/.credentials.json This file will be readable to Codex and other applications running as the same user.",
           "enum": [
             "file"
           ],
@@ -2229,7 +2229,7 @@
         },
         "theme": {
           "default": null,
-          "description": "Syntax highlighting theme name (kebab-case).\n\nWhen set, overrides automatic light/dark theme detection. Use `/theme` in the TUI or see `$CODEX_HOME/themes` for custom themes.",
+          "description": "Syntax highlighting theme name (kebab-case).\n\nWhen set, overrides automatic light/dark theme detection. Use `/theme` in the TUI or see `$CODEXROUTER_HOME/themes` for custom themes.",
           "type": "string"
         }
       },
@@ -2349,7 +2349,7 @@
       ]
     }
   },
-  "description": "Base config deserialized from ~/.codex/config.toml.",
+  "description": "Base config deserialized from CODEXROUTER_HOME/config.toml.",
   "properties": {
     "agents": {
       "allOf": [
@@ -2435,7 +2435,7 @@
         }
       ],
       "default": null,
-      "description": "Preferred backend for storing CLI auth credentials. file (default): Use a file in the Codex home directory. keyring: Use an OS-specific keyring service. auto: Use the keyring if available, otherwise use a file."
+      "description": "Preferred backend for storing CLI auth credentials. file (default): Use a file in the Codex Router home directory. keyring: Use an OS-specific keyring service. auto: Use the keyring if available, otherwise use a file."
     },
     "commit_attribution": {
       "description": "Optional commit attribution text for commit message co-author trailers.\n\nSet to an empty string to disable automatic commit attribution.",
@@ -2775,7 +2775,7 @@
         }
       ],
       "default": null,
-      "description": "Settings that govern if and what will be written to `~/.codex/history.jsonl`."
+      "description": "Settings that govern if and what will be written to `CODEXROUTER_HOME/history.jsonl`."
     },
     "hooks": {
       "allOf": [
@@ -2822,7 +2822,7 @@
           "$ref": "#/definitions/AbsolutePathBuf"
         }
       ],
-      "description": "Directory where Codex writes log files, for example `codex-tui.log`. Defaults to `$CODEX_HOME/log`."
+      "description": "Directory where Codex writes log files, for example `codex-tui.log`. Defaults to `$CODEXROUTER_HOME/log`."
     },
     "marketplaces": {
       "additionalProperties": {
@@ -2849,7 +2849,7 @@
         }
       ],
       "default": null,
-      "description": "Preferred backend for storing MCP OAuth credentials. keyring: Use an OS-specific keyring service. https://github.com/openai/codex/blob/main/codex-rs/rmcp-client/src/oauth.rs#L2 file: Use a file in the Codex home directory. auto (default): Use the OS-specific keyring service if available, otherwise use a file."
+      "description": "Preferred backend for storing MCP OAuth credentials. keyring: Use an OS-specific keyring service. https://github.com/openai/codex/blob/main/codex-rs/rmcp-client/src/oauth.rs#L2 file: Use a file in the Codex Router home directory. auto (default): Use the OS-specific keyring service if available, otherwise use a file."
     },
     "mcp_servers": {
       "additionalProperties": {
@@ -3014,7 +3014,7 @@
     },
     "project_root_markers": {
       "default": null,
-      "description": "Markers used to detect the project root when searching parent directories for `.codex` folders. Defaults to [\".git\"] when unset.",
+      "description": "Markers used to detect the project root when searching parent directories for `.codexrouter` folders. Defaults to [\".git\"] when unset.",
       "items": {
         "type": "string"
       },
@@ -3096,7 +3096,7 @@
           "$ref": "#/definitions/AbsolutePathBuf"
         }
       ],
-      "description": "Directory where Codex stores the SQLite state DB. Defaults to `$CODEX_SQLITE_HOME` when set. Otherwise uses `$CODEX_HOME`."
+      "description": "Directory where Codex stores the SQLite state DB. Defaults to `$CODEX_SQLITE_HOME` when set. Otherwise uses `$CODEXROUTER_HOME`."
     },
     "suppress_unstable_features_warning": {
       "description": "Suppress warnings about unstable (under development) features.",

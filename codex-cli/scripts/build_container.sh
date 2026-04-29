@@ -10,7 +10,13 @@ pushd "$SCRIPT_DIR/.." >> /dev/null || {
 }
 pnpm install
 pnpm run build
-rm -rf ./dist/openai-codex-*.tgz
+rm -f ./dist/zhang3f-codexrouter-*.tgz ./dist/codexrouter.tgz
 pnpm pack --pack-destination ./dist
-mv ./dist/openai-codex-*.tgz ./dist/codex.tgz
+shopt -s nullglob
+tarballs=(./dist/zhang3f-codexrouter-*.tgz)
+if (( ${#tarballs[@]} != 1 )); then
+  echo "Error: expected one Codex Router npm tarball, found ${#tarballs[@]}" >&2
+  exit 1
+fi
+mv "${tarballs[0]}" ./dist/codexrouter.tgz
 docker build -t codex -f "./Dockerfile" .

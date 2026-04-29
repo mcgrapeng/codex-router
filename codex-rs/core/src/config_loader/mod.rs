@@ -9,6 +9,7 @@ use crate::config_loader::layer_io::LoadedConfigLayers;
 use codex_app_server_protocol::ConfigLayerSource;
 use codex_config::CONFIG_TOML_FILE;
 use codex_config::ConfigRequirementsWithSources;
+use codex_config::PROJECT_CONFIG_DIR_NAME;
 use codex_config::ThreadConfigContext;
 use codex_config::ThreadConfigLoader;
 use codex_config::config_toml::ConfigToml;
@@ -113,10 +114,10 @@ pub(crate) async fn first_layer_config_error_from_entries(
 /// - admin:    managed preferences (*)
 /// - system    `/etc/codex/config.toml` (Unix) or
 ///   `%ProgramData%\OpenAI\Codex\config.toml` (Windows)
-/// - user      `${CODEX_HOME}/config.toml`
+/// - user      `${CODEXROUTER_HOME}/config.toml`
 /// - cwd       `${PWD}/config.toml` (loaded but disabled when the directory is untrusted)
-/// - tree      parent directories up to root looking for `./.codex/config.toml` (loaded but disabled when untrusted)
-/// - repo      `$(git rev-parse --show-toplevel)/.codex/config.toml` (loaded but disabled when untrusted)
+/// - tree      parent directories up to root looking for `./.codexrouter/config.toml` (loaded but disabled when untrusted)
+/// - repo      `$(git rev-parse --show-toplevel)/.codexrouter/config.toml` (loaded but disabled when untrusted)
 /// - runtime   e.g., --config flags, model selector in UI
 ///
 /// (*) Only available on macOS via managed device profiles.
@@ -223,7 +224,7 @@ pub async fn load_config_layers_state(
         .await?;
     layers.push(system_layer);
 
-    // Add a layer for $CODEX_HOME/config.toml so folder-derived resources such
+    // Add a layer for $CODEXROUTER_HOME/config.toml so folder-derived resources such
     // as rules/ can still be discovered. When user config is ignored, preserve
     // the layer metadata without reading config.toml.
     let user_file = AbsolutePathBuf::resolve_path_against_base(CONFIG_TOML_FILE, codex_home);
@@ -726,12 +727,12 @@ impl ProjectTrustContext {
 }
 
 fn project_layer_entry(
-    dot_codex_folder: &AbsolutePathBuf,
+    project_config_folder: &AbsolutePathBuf,
     config: TomlValue,
     disabled_reason: Option<String>,
 ) -> ConfigLayerEntry {
     let source = ConfigLayerSource::Project {
-        dot_codex_folder: dot_codex_folder.clone(),
+        project_config_folder: project_config_folder.clone(),
     };
 
     if let Some(reason) = disabled_reason {
@@ -954,9 +955,9 @@ async fn load_project_layers(
 
     let mut layers = Vec::new();
     for dir in dirs {
-        let dot_codex_abs = dir.join(".codex");
+        let project_config_abs = dir.join(PROJECT_CONFIG_DIR_NAME);
         if !fs
-            .get_metadata(&dot_codex_abs, /*sandbox*/ None)
+            .get_metadata(&project_config_abs, /*sandbox*/ None)
             .await
             .map(|metadata| metadata.is_directory)
             .unwrap_or(false)
@@ -966,12 +967,14 @@ async fn load_project_layers(
 
         let decision = trust_context.decision_for_dir(&dir);
         let disabled_reason = trust_context.disabled_reason_for_decision(&decision);
-        let dot_codex_normalized =
-            normalize_path(dot_codex_abs.as_path()).unwrap_or_else(|_| dot_codex_abs.to_path_buf());
-        if dot_codex_abs == codex_home_abs || dot_codex_normalized == codex_home_normalized {
+        let project_config_normalized = normalize_path(project_config_abs.as_path())
+            .unwrap_or_else(|_| project_config_abs.to_path_buf());
+        if project_config_abs == codex_home_abs
+            || project_config_normalized == codex_home_normalized
+        {
             continue;
         }
-        let config_file = dot_codex_abs.join(CONFIG_TOML_FILE);
+        let config_file = project_config_abs.join(CONFIG_TOML_FILE);
         match fs.read_file_text(&config_file, /*sandbox*/ None).await {
             Ok(contents) => {
                 let config: TomlValue = match toml::from_str(&contents) {
@@ -987,7 +990,7 @@ async fn load_project_layers(
                             ));
                         }
                         layers.push(project_layer_entry(
-                            &dot_codex_abs,
+                            &project_config_abs,
                             TomlValue::Table(toml::map::Map::new()),
                             disabled_reason.clone(),
                         ));
@@ -995,8 +998,9 @@ async fn load_project_layers(
                     }
                 };
                 let config =
-                    resolve_relative_paths_in_config_toml(config, dot_codex_abs.as_path())?;
-                let entry = project_layer_entry(&dot_codex_abs, config, disabled_reason.clone());
+                    resolve_relative_paths_in_config_toml(config, project_config_abs.as_path())?;
+                let entry =
+                    project_layer_entry(&project_config_abs, config, disabled_reason.clone());
                 layers.push(entry);
             }
             Err(err) => {
@@ -1005,7 +1009,7 @@ async fn load_project_layers(
                     // for this project layer, as this may still have subfolders
                     // that are significant in the overall ConfigLayerStack.
                     layers.push(project_layer_entry(
-                        &dot_codex_abs,
+                        &project_config_abs,
                         TomlValue::Table(toml::map::Map::new()),
                         disabled_reason,
                     ));

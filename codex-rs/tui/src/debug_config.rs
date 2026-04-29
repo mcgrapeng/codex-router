@@ -377,10 +377,12 @@ fn format_config_layer_source(source: &ConfigLayerSource) -> String {
         ConfigLayerSource::User { file } => {
             format!("user ({})", file.as_path().display())
         }
-        ConfigLayerSource::Project { dot_codex_folder } => {
+        ConfigLayerSource::Project {
+            project_config_folder,
+        } => {
             format!(
                 "project ({}/config.toml)",
-                dot_codex_folder.as_path().display()
+                project_config_folder.as_path().display()
             )
         }
         ConfigLayerSource::SessionFlags => "session-flags".to_string(),
@@ -567,9 +569,9 @@ mod tests {
             absolute_path("/etc/codex/config.toml")
         };
         let project_folder = if cfg!(windows) {
-            absolute_path("C:\\repo\\.codex")
+            absolute_path("C:\\repo\\.codexrouter")
         } else {
-            absolute_path("/repo/.codex")
+            absolute_path("/repo/.codexrouter")
         };
 
         let layers = vec![
@@ -579,7 +581,7 @@ mod tests {
             ),
             ConfigLayerEntry::new_disabled(
                 ConfigLayerSource::Project {
-                    dot_codex_folder: project_folder,
+                    project_config_folder: project_folder,
                 },
                 empty_toml_table(),
                 "project is untrusted",
@@ -705,9 +707,9 @@ mod tests {
         };
 
         let user_file = if cfg!(windows) {
-            absolute_path("C:\\users\\alice\\.codex\\config.toml")
+            absolute_path("C:\\users\\alice\\.codexrouter\\config.toml")
         } else {
-            absolute_path("/home/alice/.codex/config.toml")
+            absolute_path("/home/alice/.codexrouter/config.toml")
         };
         let stack = ConfigLayerStack::new(
             vec![ConfigLayerEntry::new(

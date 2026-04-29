@@ -190,6 +190,11 @@ function Get-CurrentInstalledVersion {
         [string]$StandaloneCurrentDir
     )
 
+    $standaloneVersion = Get-VersionFromBinary -CodexPath (Join-Path $StandaloneCurrentDir "codexrouter.exe")
+    if (-not [string]::IsNullOrWhiteSpace($standaloneVersion)) {
+        return $standaloneVersion
+    }
+
     $standaloneVersion = Get-VersionFromBinary -CodexPath (Join-Path $StandaloneCurrentDir "codex.exe")
     if (-not [string]::IsNullOrWhiteSpace($standaloneVersion)) {
         return $standaloneVersion
@@ -461,6 +466,7 @@ function Test-ReleaseIsComplete {
     }
 
     $expectedFiles = @(
+        "codexrouter.exe",
         "codex.exe",
         "codex-resources\codex-command-runner.exe",
         "codex-resources\codex-windows-sandbox-setup.exe",
@@ -476,7 +482,7 @@ function Test-ReleaseIsComplete {
 }
 
 function Get-ExistingCodexCommand {
-    $existing = Get-Command codex -ErrorAction SilentlyContinue
+    $existing = Get-Command codexrouter -ErrorAction SilentlyContinue
     if ($null -eq $existing) {
         return $null
     }
@@ -520,8 +526,8 @@ function Get-ConflictingInstall {
         return $null
     }
 
-    Write-Step "Detected existing $manager-managed Codex at $existingPath"
-    Write-WarningStep "Multiple managed Codex installs can be ambiguous because PATH order decides which one runs."
+    Write-Step "Detected existing $manager-managed Codex Router at $existingPath"
+    Write-WarningStep "Multiple managed Codex Router installs can be ambiguous because PATH order decides which codexrouter runs."
 
     return [PSCustomObject]@{
         Manager = $manager
@@ -541,21 +547,21 @@ function Maybe-HandleConflictingInstall {
     $manager = $Conflict.Manager
 
     $uninstallArgs = if ($manager -eq "bun") {
-        @("remove", "-g", "@openai/codex")
+        @("remove", "-g", "@zhang3f/codexrouter")
     } else {
-        @("uninstall", "-g", "@openai/codex")
+        @("uninstall", "-g", "@zhang3f/codexrouter")
     }
     $uninstallCommand = if ($manager -eq "bun") { "bun" } else { "npm" }
 
-    if (Prompt-YesNo "Uninstall the existing $manager-managed Codex now?") {
+    if (Prompt-YesNo "Uninstall the existing $manager-managed Codex Router now?") {
         Write-Step "Running: $uninstallCommand $($uninstallArgs -join ' ')"
         try {
             & $uninstallCommand @uninstallArgs
         } catch {
-            Write-WarningStep "Failed to uninstall the existing $manager-managed Codex. Continuing with the standalone install."
+            Write-WarningStep "Failed to uninstall the existing $manager-managed Codex Router. Continuing with the standalone install."
         }
     } else {
-        Write-WarningStep "Leaving the existing $manager-managed Codex installed. PATH order will determine which codex runs."
+        Write-WarningStep "Leaving the existing $manager-managed Codex Router installed. PATH order will determine which codexrouter runs."
     }
 }
 
@@ -564,10 +570,10 @@ function Test-VisibleCodexCommand {
         [string]$VisibleBinDir
     )
 
-    $codexCommand = Join-Path $VisibleBinDir "codex.exe"
+    $codexCommand = Join-Path $VisibleBinDir "codexrouter.exe"
     & $codexCommand --version *> $null
     if ($LASTEXITCODE -ne 0) {
-        throw "Installed Codex command failed verification: $codexCommand --version"
+        throw "Installed Codex Router command failed verification: $codexCommand --version"
     }
 }
 
@@ -602,17 +608,17 @@ switch ($architecture) {
     }
 }
 
-$codexHome = if ([string]::IsNullOrWhiteSpace($env:CODEX_HOME)) {
-    Join-Path $env:USERPROFILE ".codex"
+$codexHome = if ([string]::IsNullOrWhiteSpace($env:CODEXROUTER_HOME)) {
+    Join-Path $env:USERPROFILE ".codexrouter"
 } else {
-    $env:CODEX_HOME
+    $env:CODEXROUTER_HOME
 }
 $standaloneRoot = Join-Path $codexHome "packages\standalone"
 $releasesDir = Join-Path $standaloneRoot "releases"
 $currentDir = Join-Path $standaloneRoot "current"
 $lockPath = Join-Path $standaloneRoot "install.lock"
 
-$defaultVisibleBinDir = Join-Path $env:LOCALAPPDATA "Programs\OpenAI\Codex\bin"
+$defaultVisibleBinDir = Join-Path $env:LOCALAPPDATA "Programs\CodexRouter\bin"
 if ([string]::IsNullOrWhiteSpace($env:CODEX_INSTALL_DIR)) {
     $visibleBinDir = $defaultVisibleBinDir
 } else {
@@ -625,11 +631,11 @@ $releaseName = "$resolvedVersion-$target"
 $releaseDir = Join-Path $releasesDir $releaseName
 
 if (-not [string]::IsNullOrWhiteSpace($currentVersion) -and $currentVersion -ne $resolvedVersion) {
-    Write-Step "Updating Codex CLI from $currentVersion to $resolvedVersion"
+    Write-Step "Updating Codex Router from $currentVersion to $resolvedVersion"
 } elseif (-not [string]::IsNullOrWhiteSpace($currentVersion)) {
-    Write-Step "Updating Codex CLI"
+    Write-Step "Updating Codex Router"
 } else {
-    Write-Step "Installing Codex CLI"
+    Write-Step "Installing Codex Router"
 }
 Write-Step "Detected platform: $platformLabel"
 Write-Step "Resolved version: $resolvedVersion"
@@ -655,7 +661,7 @@ try {
             $stagingDir = Join-Path $releasesDir ".staging.$releaseName.$PID"
             $assetMetadata = Get-ReleaseAssetMetadata -AssetName $packageAsset -ResolvedVersion $resolvedVersion
 
-            Write-Step "Downloading Codex CLI"
+            Write-Step "Downloading Codex Router"
             Invoke-WebRequest -Uri $assetMetadata.Url -OutFile $archivePath
             Test-ArchiveDigest -ArchivePath $archivePath -ExpectedDigest $assetMetadata.Sha256
 
@@ -670,15 +676,16 @@ try {
             $vendorRoot = Join-Path $extractDir "package/vendor/$target"
             $resourcesDir = Join-Path $stagingDir "codex-resources"
             New-Item -ItemType Directory -Force -Path $resourcesDir | Out-Null
-            $copyMap = @{
-                "codex/codex.exe" = "codex.exe"
-                "codex/codex-command-runner.exe" = "codex-resources\codex-command-runner.exe"
-                "codex/codex-windows-sandbox-setup.exe" = "codex-resources\codex-windows-sandbox-setup.exe"
-                "path/rg.exe" = "codex-resources\rg.exe"
-            }
+            $copyMap = @(
+                @{ Source = "codex/codex.exe"; Destination = "codexrouter.exe" },
+                @{ Source = "codex/codex.exe"; Destination = "codex.exe" },
+                @{ Source = "codex/codex-command-runner.exe"; Destination = "codex-resources\codex-command-runner.exe" },
+                @{ Source = "codex/codex-windows-sandbox-setup.exe"; Destination = "codex-resources\codex-windows-sandbox-setup.exe" },
+                @{ Source = "path/rg.exe"; Destination = "codex-resources\rg.exe" }
+            )
 
-            foreach ($relativeSource in $copyMap.Keys) {
-                Copy-Item -LiteralPath (Join-Path $vendorRoot $relativeSource) -Destination (Join-Path $stagingDir $copyMap[$relativeSource])
+            foreach ($entry in $copyMap) {
+                Copy-Item -LiteralPath (Join-Path $vendorRoot $entry.Source) -Destination (Join-Path $stagingDir $entry.Destination)
             }
 
             if (Test-Path -LiteralPath $releaseDir) {
@@ -739,12 +746,12 @@ if (-not (Path-Contains -PathValue $env:Path -Entry $visibleBinDir)) {
     }
 }
 
-Write-Step "Current PowerShell session: codex"
-Write-Step "Future PowerShell windows: open a new PowerShell window and run: codex"
-Write-Host "Codex CLI $resolvedVersion installed successfully."
+Write-Step "Current PowerShell session: codexrouter"
+Write-Step "Future PowerShell windows: open a new PowerShell window and run: codexrouter"
+Write-Host "Codex Router $resolvedVersion installed successfully."
 
-$codexCommand = Join-Path $visibleBinDir "codex.exe"
-if (Prompt-YesNo "Start Codex now?") {
-    Write-Step "Launching Codex"
+$codexCommand = Join-Path $visibleBinDir "codexrouter.exe"
+if (Prompt-YesNo "Start Codex Router now?") {
+    Write-Step "Launching Codex Router"
     & $codexCommand
 }

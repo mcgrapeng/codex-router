@@ -580,7 +580,7 @@ pub enum ConfigLayerSource {
         file: AbsolutePathBuf,
     },
 
-    /// User config layer from $CODEX_HOME/config.toml. This layer is special
+    /// User config layer from $CODEXROUTER_HOME/config.toml. This layer is special
     /// in that it is expected to be:
     /// - writable by the user
     /// - generally outside the workspace directory
@@ -592,12 +592,12 @@ pub enum ConfigLayerSource {
         file: AbsolutePathBuf,
     },
 
-    /// Path to a .codex/ folder within a project. There could be multiple of
+    /// Path to a .codexrouter/ folder within a project. There could be multiple of
     /// these between `cwd` and the project/repo root.
     #[serde(rename_all = "camelCase")]
     #[ts(rename_all = "camelCase")]
     Project {
-        dot_codex_folder: AbsolutePathBuf,
+        project_config_folder: AbsolutePathBuf,
     },
 
     /// Session-layer overrides supplied via `-c`/`--config`.
@@ -1138,7 +1138,7 @@ pub struct ExternalAgentConfigDetectResponse {
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "v2/")]
 pub struct ExternalAgentConfigDetectParams {
-    /// If true, include detection under the user's home (~/.claude, ~/.codex, etc.).
+    /// If true, include detection under the user's home (~/.claude, ~/.codexrouter, etc.).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub include_home: bool,
     /// Zero or more working directories to include for repo-scoped detection.
@@ -4619,7 +4619,7 @@ pub struct Thread {
     pub cwd: AbsolutePathBuf,
     /// Version of the CLI that created the thread.
     pub cli_version: String,
-    /// Origin of the thread (CLI, VSCode, codex exec, codex app-server, etc.).
+    /// Origin of the thread (CLI, VSCode, codexrouter exec, codexrouter app-server, etc.).
     pub source: SessionSource,
     /// Optional random unique nickname assigned to an AgentControl-spawned sub-agent.
     pub agent_nickname: Option<String>,
@@ -9644,7 +9644,7 @@ mod tests {
                 },
                 CoreUserInput::Skill {
                     name: "skill-creator".to_string(),
-                    path: PathBuf::from("/repo/.codex/skills/skill-creator/SKILL.md"),
+                    path: PathBuf::from("/repo/.codexrouter/skills/skill-creator/SKILL.md"),
                 },
                 CoreUserInput::Mention {
                     name: "Demo App".to_string(),
@@ -9670,7 +9670,7 @@ mod tests {
                     },
                     UserInput::Skill {
                         name: "skill-creator".to_string(),
-                        path: PathBuf::from("/repo/.codex/skills/skill-creator/SKILL.md"),
+                        path: PathBuf::from("/repo/.codexrouter/skills/skill-creator/SKILL.md"),
                     },
                     UserInput::Mention {
                         name: "Demo App".to_string(),

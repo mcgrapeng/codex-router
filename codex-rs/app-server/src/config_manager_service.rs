@@ -340,7 +340,7 @@ impl ConfigManager {
     }
 
     /// Loads a "thread-agnostic" config, which means the config layers do not
-    /// include any in-repo .codex/ folders because there is no cwd/project root
+    /// include any in-repo .codexrouter/ folders because there is no cwd/project root
     /// associated with this query.
     async fn load_thread_agnostic_config(&self) -> std::io::Result<ConfigLayerStack> {
         self.load_config_layers(/*cwd*/ None).await
@@ -571,9 +571,11 @@ fn override_message(layer: &ConfigLayerSource) -> String {
         ConfigLayerSource::System { file } => {
             format!("Overridden by managed config (system): {}", file.display())
         }
-        ConfigLayerSource::Project { dot_codex_folder } => format!(
+        ConfigLayerSource::Project {
+            project_config_folder,
+        } => format!(
             "Overridden by project config: {}/{CONFIG_TOML_FILE}",
-            dot_codex_folder.display(),
+            project_config_folder.display(),
         ),
         ConfigLayerSource::SessionFlags => "Overridden by session flags".to_string(),
         ConfigLayerSource::User { file } => {

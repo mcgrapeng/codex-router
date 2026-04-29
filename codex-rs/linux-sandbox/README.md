@@ -2,7 +2,7 @@
 
 This crate is responsible for producing:
 
-- a `codex-linux-sandbox` standalone executable for Linux that is bundled with the Node.js version of the Codex CLI
+- a `codex-linux-sandbox` standalone executable for Linux that is bundled with the Node.js version of the Codex Router CLI
 - a lib crate that exposes the business logic of the executable as `run_main()` so that
   - the `codex-exec` CLI can check if its arg0 is `codex-linux-sandbox` and, if so, execute as if it were `codex-linux-sandbox`
   - this should also be true of the `codex` multitool CLI
@@ -52,7 +52,7 @@ commands that would enter the bubblewrap path.
 - When bubblewrap is active, writable roots are layered with `--bind <root> <root>`.
 - When bubblewrap is active, protected subpaths under writable roots (for
   example `.git`,
-  resolved `gitdir:`, and `.codex`) are re-applied as read-only via `--ro-bind`.
+  resolved `gitdir:`, and `.codexrouter`) are re-applied as read-only via `--ro-bind`.
 - When bubblewrap is active, overlapping split-policy
   entries are applied in path-specificity order so narrower writable children
   can reopen broader read-only or denied parents while narrower denied subpaths

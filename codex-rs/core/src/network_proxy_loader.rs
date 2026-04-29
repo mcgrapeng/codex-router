@@ -43,7 +43,7 @@ pub async fn build_network_proxy_state_and_reloader() -> Result<(ConfigState, Mt
 }
 
 async fn build_config_state_with_mtimes() -> Result<(ConfigState, Vec<LayerMtime>)> {
-    let codex_home = find_codex_home().context("failed to resolve CODEX_HOME")?;
+    let codex_home = find_codex_home().context("failed to resolve CODEXROUTER_HOME")?;
     let cli_overrides = Vec::new();
     let overrides = LoaderOverrides::default();
     let config_layer_stack = load_config_layers_state(
@@ -92,9 +92,9 @@ fn collect_layer_mtimes(stack: &ConfigLayerStack) -> Vec<LayerMtime> {
             let path = match &layer.name {
                 ConfigLayerSource::System { file } => Some(file.clone()),
                 ConfigLayerSource::User { file } => Some(file.clone()),
-                ConfigLayerSource::Project { dot_codex_folder } => {
-                    Some(dot_codex_folder.join(CONFIG_TOML_FILE))
-                }
+                ConfigLayerSource::Project {
+                    project_config_folder,
+                } => Some(project_config_folder.join(CONFIG_TOML_FILE)),
                 ConfigLayerSource::LegacyManagedConfigTomlFromFile { file } => Some(file.clone()),
                 _ => None,
             };

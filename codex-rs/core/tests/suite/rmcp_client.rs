@@ -2049,8 +2049,8 @@ async fn streamable_http_tool_call_round_trip() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// This test writes to a fallback credentials file in CODEX_HOME.
-/// Ideally, we wouldn't need to serialize the test but it's much more cumbersome to wire CODEX_HOME through the code.
+/// This test writes to a fallback credentials file in CODEXROUTER_HOME.
+/// Ideally, we wouldn't need to serialize the test but it's much more cumbersome to wire CODEXROUTER_HOME through the code.
 #[test]
 #[serial(codex_home)]
 fn streamable_http_with_oauth_round_trip() -> anyhow::Result<()> {
@@ -2141,7 +2141,7 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
         .await?;
 
     let temp_home = Arc::new(tempdir()?);
-    let _codex_home_guard = EnvVarGuard::set("CODEX_HOME", temp_home.path().as_os_str());
+    let _codex_home_guard = EnvVarGuard::set("CODEXROUTER_HOME", temp_home.path().as_os_str());
     write_fallback_oauth_tokens(
         temp_home.path(),
         server_name,

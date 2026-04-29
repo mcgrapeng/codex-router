@@ -1,9 +1,10 @@
 ---
 source: tui/src/chatwidget/tests/popups_and_settings.rs
+assertion_line: 1838
 expression: popup
 ---
   Memories
-  Choose how Codex uses and creates memories. Changes are saved to config.toml
+  Choose how Codex Router uses and creates memories. Changes are saved to conf
 
 › [x] Use memories       Use memories in the following threads. Applied at
                          next thread.

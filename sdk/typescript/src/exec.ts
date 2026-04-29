@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
 import { createRequire } from "node:module";
@@ -41,15 +42,15 @@ export type CodexExecArgs = {
 
 const INTERNAL_ORIGINATOR_ENV = "CODEX_INTERNAL_ORIGINATOR_OVERRIDE";
 const TYPESCRIPT_SDK_ORIGINATOR = "codex_sdk_ts";
-const CODEX_NPM_NAME = "@openai/codex";
+const CODEX_NPM_NAME = "@zhang3f/codexrouter";
 
 const PLATFORM_PACKAGE_BY_TARGET: Record<string, string> = {
-  "x86_64-unknown-linux-musl": "@openai/codex-linux-x64",
-  "aarch64-unknown-linux-musl": "@openai/codex-linux-arm64",
-  "x86_64-apple-darwin": "@openai/codex-darwin-x64",
-  "aarch64-apple-darwin": "@openai/codex-darwin-arm64",
-  "x86_64-pc-windows-msvc": "@openai/codex-win32-x64",
-  "aarch64-pc-windows-msvc": "@openai/codex-win32-arm64",
+  "x86_64-unknown-linux-musl": "@zhang3f/codexrouter-linux-x64",
+  "aarch64-unknown-linux-musl": "@zhang3f/codexrouter-linux-arm64",
+  "x86_64-apple-darwin": "@zhang3f/codexrouter-darwin-x64",
+  "aarch64-apple-darwin": "@zhang3f/codexrouter-darwin-arm64",
+  "x86_64-pc-windows-msvc": "@zhang3f/codexrouter-win32-x64",
+  "aarch64-pc-windows-msvc": "@zhang3f/codexrouter-win32-arm64",
 };
 
 const moduleRequire = createRequire(import.meta.url);
@@ -157,6 +158,9 @@ export class CodexExec {
     if (!env[INTERNAL_ORIGINATOR_ENV]) {
       env[INTERNAL_ORIGINATOR_ENV] = TYPESCRIPT_SDK_ORIGINATOR;
     }
+    const codexRouterHome = resolveCodexRouterHome(env);
+    env.CODEXROUTER_HOME = codexRouterHome;
+    env.CODEX_HOME = codexRouterHome;
     if (args.apiKey) {
       env.CODEX_API_KEY = args.apiKey;
     }
@@ -314,6 +318,15 @@ function isPlainObject(value: unknown): value is CodexConfigObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function resolveCodexRouterHome(env: Record<string, string>) {
+  const explicitHome = env.CODEXROUTER_HOME;
+  if (explicitHome && explicitHome.trim() !== "") {
+    return explicitHome;
+  }
+
+  return path.join(os.homedir(), ".codexrouter");
+}
+
 function findCodexPath() {
   const { platform, arch } = process;
 
@@ -377,7 +390,7 @@ function findCodexPath() {
     vendorRoot = path.join(path.dirname(platformPackageJsonPath), "vendor");
   } catch {
     throw new Error(
-      `Unable to locate Codex CLI binaries. Ensure ${CODEX_NPM_NAME} is installed with optional dependencies.`,
+      `Unable to locate Codex Router CLI binaries. Ensure ${CODEX_NPM_NAME} is installed with optional dependencies.`,
     );
   }
 

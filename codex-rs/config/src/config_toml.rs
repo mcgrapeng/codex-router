@@ -65,7 +65,7 @@ const RESERVED_MODEL_PROVIDER_IDS: [&str; 4] = [
     LMSTUDIO_OSS_PROVIDER_ID,
 ];
 
-/// Base config deserialized from ~/.codex/config.toml.
+/// Base config deserialized from CODEXROUTER_HOME/config.toml.
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, JsonSchema)]
 #[schemars(deny_unknown_fields)]
 pub struct ConfigToml {
@@ -165,7 +165,7 @@ pub struct ConfigToml {
     pub forced_login_method: Option<ForcedLoginMethod>,
 
     /// Preferred backend for storing CLI auth credentials.
-    /// file (default): Use a file in the Codex home directory.
+    /// file (default): Use a file in the Codex Router home directory.
     /// keyring: Use an OS-specific keyring service.
     /// auto: Use the keyring if available, otherwise use a file.
     #[serde(default)]
@@ -180,7 +180,7 @@ pub struct ConfigToml {
     /// Preferred backend for storing MCP OAuth credentials.
     /// keyring: Use an OS-specific keyring service.
     ///          https://github.com/openai/codex/blob/main/codex-rs/rmcp-client/src/oauth.rs#L2
-    /// file: Use a file in the Codex home directory.
+    /// file: Use a file in the Codex Router home directory.
     /// auto (default): Use the OS-specific keyring service if available, otherwise use a file.
     #[serde(default)]
     pub mcp_oauth_credentials_store: Option<OAuthCredentialsStoreMode>,
@@ -229,16 +229,16 @@ pub struct ConfigToml {
     #[serde(default)]
     pub profiles: HashMap<String, ConfigProfile>,
 
-    /// Settings that govern if and what will be written to `~/.codex/history.jsonl`.
+    /// Settings that govern if and what will be written to `CODEXROUTER_HOME/history.jsonl`.
     #[serde(default)]
     pub history: Option<History>,
 
     /// Directory where Codex stores the SQLite state DB.
-    /// Defaults to `$CODEX_SQLITE_HOME` when set. Otherwise uses `$CODEX_HOME`.
+    /// Defaults to `$CODEX_SQLITE_HOME` when set. Otherwise uses `$CODEXROUTER_HOME`.
     pub sqlite_home: Option<AbsolutePathBuf>,
 
     /// Directory where Codex writes log files, for example `codex-tui.log`.
-    /// Defaults to `$CODEX_HOME/log`.
+    /// Defaults to `$CODEXROUTER_HOME/log`.
     pub log_dir: Option<AbsolutePathBuf>,
 
     /// Optional URI-based file opener. If set, citations to files in the model
@@ -362,7 +362,7 @@ pub struct ConfigToml {
     pub ghost_snapshot: Option<GhostSnapshotToml>,
 
     /// Markers used to detect the project root when searching parent
-    /// directories for `.codex` folders. Defaults to [".git"] when unset.
+    /// directories for `.codexrouter` folders. Defaults to [".git"] when unset.
     #[serde(default)]
     pub project_root_markers: Option<Vec<String>>,
 

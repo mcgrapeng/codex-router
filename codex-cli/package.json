@@ -1,9 +1,12 @@
 {
-  "name": "@openai/codex",
+  "name": "@zhang3f/codexrouter",
   "version": "0.0.0-dev",
   "license": "Apache-2.0",
   "bin": {
-    "codex": "bin/codex.js"
+    "codexrouter": "bin/codex.js"
+  },
+  "scripts": {
+    "postinstall": "node bin/codexrouter-init.js"
   },
   "type": "module",
   "engines": {

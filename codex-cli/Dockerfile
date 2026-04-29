@@ -38,16 +38,16 @@ USER node
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
 ENV PATH=$PATH:/usr/local/share/npm-global/bin
 
-# Install codex
-COPY dist/codex.tgz codex.tgz
-RUN npm install -g codex.tgz \
+# Install Codex Router
+COPY dist/codexrouter.tgz codexrouter.tgz
+RUN npm install -g codexrouter.tgz \
   && npm cache clean --force \
-  && rm -rf /usr/local/share/npm-global/lib/node_modules/codex-cli/node_modules/.cache \
-  && rm -rf /usr/local/share/npm-global/lib/node_modules/codex-cli/tests \
-  && rm -rf /usr/local/share/npm-global/lib/node_modules/codex-cli/docs
+  && rm -rf /usr/local/share/npm-global/lib/node_modules/@zhang3f/codexrouter/node_modules/.cache \
+  && rm -rf /usr/local/share/npm-global/lib/node_modules/@zhang3f/codexrouter/tests \
+  && rm -rf /usr/local/share/npm-global/lib/node_modules/@zhang3f/codexrouter/docs
 
 # Inside the container we consider the environment already sufficiently locked
-# down, therefore instruct Codex CLI to allow running without sandboxing.
+# down, therefore instruct Codex Router CLI to allow running without sandboxing.
 ENV CODEX_UNSAFE_ALLOW_NO_SANDBOX=1
 
 # Copy and set up firewall script as root.

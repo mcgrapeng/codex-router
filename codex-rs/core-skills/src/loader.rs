@@ -266,7 +266,7 @@ fn skill_roots_from_layer_stack_inner(
                 }
             }
             ConfigLayerSource::User { .. } => {
-                // Deprecated user skills location (`$CODEX_HOME/skills`), kept for backward
+                // Deprecated user skills location (`$CODEXROUTER_HOME/skills`), kept for backward
                 // compatibility.
                 roots.push(SkillRoot {
                     path: config_folder.join(SKILLS_DIR_NAME),
@@ -283,7 +283,7 @@ fn skill_roots_from_layer_stack_inner(
                     });
                 }
 
-                // Embedded system skills are cached under `$CODEX_HOME/skills/.system` and are a
+                // Embedded system skills are cached under `$CODEXROUTER_HOME/skills/.system` and are a
                 // special case (not a config layer).
                 roots.push(SkillRoot {
                     path: system_cache_root_dir(&config_folder),

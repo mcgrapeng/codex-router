@@ -36,7 +36,7 @@ model_provider = "ollama"
     std::fs::write(codex_home.join("config.toml"), config_contents)?;
 
     let CodexCliOutput { exit_code, output } = run_codex_cli(codex_home, cwd).await?;
-    assert_ne!(0, exit_code, "Codex CLI should exit nonzero.");
+    assert_ne!(0, exit_code, "Codex Router CLI should exit nonzero.");
     assert!(
         output.contains("ERROR: Failed to initialize codex:"),
         "expected startup error in output, got: {output}"
@@ -60,7 +60,7 @@ async fn run_codex_cli(
     let codex_cli = codex_utils_cargo_bin::cargo_bin("codex")?;
     let mut env = HashMap::new();
     env.insert(
-        "CODEX_HOME".to_string(),
+        "CODEXROUTER_HOME".to_string(),
         codex_home.as_ref().display().to_string(),
     );
 
@@ -111,7 +111,7 @@ async fn run_codex_cli(
         Ok(Err(err)) => return Err(err.into()),
         Err(_) => {
             session.terminate();
-            anyhow::bail!("timed out waiting for codex CLI to exit");
+            anyhow::bail!("timed out waiting for codexrouter CLI to exit");
         }
     };
     // Drain any output that raced with the exit notification.

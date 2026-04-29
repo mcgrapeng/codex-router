@@ -1,4 +1,4 @@
-# Codex App Server SDK — API Reference
+# Codex Router App Server SDK - API Reference
 
 Public surface of `codex_app_server` for app-server v2.
 

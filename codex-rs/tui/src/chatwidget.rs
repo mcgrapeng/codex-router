@@ -3049,7 +3049,7 @@ impl ChatWidget {
         self.finalize_turn();
 
         let message = if message.trim().is_empty() {
-            "Codex is currently experiencing high load.".to_string()
+            "Codex Router is currently experiencing high load.".to_string()
         } else {
             message
         };
@@ -3111,13 +3111,13 @@ impl ChatWidget {
         match rate_limit_reached_type {
             Some(RateLimitReachedType::WorkspaceOwnerCreditsDepleted) => {
                 self.on_error(
-                    "You're out of credits. Your workspace is out of credits. Add credits to continue using Codex."
+                    "You're out of credits. Your workspace is out of credits. Add credits to continue using Codex Router."
                         .to_string(),
                 );
             }
             Some(RateLimitReachedType::WorkspaceOwnerUsageLimitReached) => {
                 self.on_error(
-                    "Usage limit reached. You've reached your usage limit. Increase your limits to continue using codex."
+                    "Usage limit reached. You've reached your usage limit. Increase your limits to continue using Codex Router."
                         .to_string(),
                 );
             }
@@ -8085,7 +8085,7 @@ impl ChatWidget {
             ),
             AddCreditsNudgeCreditType::UsageLimit => (
                 "Usage limit reached",
-                "Request a limit increase from your owner to continue using codex. Request increase?",
+                "Request a limit increase from your owner to continue using Codex Router. Request increase?",
             ),
         };
         let send_actions: Vec<SelectionAction> = vec![Box::new(move |tx| {
@@ -8256,7 +8256,9 @@ impl ChatWidget {
 
         let mut header = ColumnRenderable::new();
         header.push(Line::from("Select Personality".bold()));
-        header.push(Line::from("Choose a communication style for Codex.".dim()));
+        header.push(Line::from(
+            "Choose a communication style for Codex Router.".dim(),
+        ));
 
         self.bottom_pane.show_selection_view(SelectionViewParams {
             header: Box::new(header),
@@ -8292,7 +8294,7 @@ impl ChatWidget {
 
         self.bottom_pane.show_selection_view(SelectionViewParams {
             title: Some("Settings".to_string()),
-            subtitle: Some("Configure settings for Codex.".to_string()),
+            subtitle: Some("Configure settings for Codex Router.".to_string()),
             footer_hint: Some(standard_popup_hint_line()),
             items,
             ..Default::default()
@@ -9314,7 +9316,7 @@ impl ChatWidget {
         let mut header_children: Vec<Box<dyn Renderable>> = Vec::new();
         let title_line = Line::from("Enable full access?").bold();
         let info_line = Line::from(vec![
-            "When Codex runs with full access, it can edit any file on your computer and run commands with network, without your approval. "
+            "When Codex Router runs with full access, it can edit any file on your computer and run commands with network, without your approval. "
                 .into(),
             "Exercise caution when enabling full access. This significantly increases the risk of data loss, leaks, or unexpected behavior."
                 .fg(Color::Red),
@@ -9567,7 +9569,7 @@ impl ChatWidget {
         let mut header = ColumnRenderable::new();
         header.push(*Box::new(
             Paragraph::new(vec![
-                line!["Set up the Codex agent sandbox to protect your files and control network access. Learn more <https://developers.openai.com/codex/windows>"],
+                line!["Set up the Codex Router agent sandbox to protect your files and control network access. Learn more <https://developers.openai.com/codex/windows>"],
             ])
             .wrap(Wrap { trim: false }),
         ));
@@ -9647,7 +9649,7 @@ impl ChatWidget {
         ]);
         lines.push(line![""]);
         lines.push(line![
-            "You can still use Codex in a non-admin sandbox. It carries greater risk if prompt injected."
+            "You can still use Codex Router in a non-admin sandbox. It carries greater risk if prompt injected."
         ]);
         lines.push(line![
             "Learn more <https://developers.openai.com/codex/windows>"
@@ -9681,7 +9683,7 @@ impl ChatWidget {
                 ..Default::default()
             },
             SelectionItem {
-                name: "Use Codex with non-admin sandbox".to_string(),
+                name: "Use Codex Router with non-admin sandbox".to_string(),
                 description: None,
                 actions: vec![Box::new({
                     let otel = self.session_telemetry.clone();
@@ -10451,7 +10453,7 @@ impl ChatWidget {
 
     fn rename_confirmation_cell(name: &str, thread_id: Option<ThreadId>) -> PlainHistoryCell {
         let resume_cmd = crate::legacy_core::util::resume_command(Some(name), thread_id)
-            .unwrap_or_else(|| format!("codex resume {name}"));
+            .unwrap_or_else(|| format!("codexrouter resume {name}"));
         let name = name.to_string();
         let line = vec![
             "• ".into(),
@@ -10614,7 +10616,7 @@ impl ChatWidget {
             let instructions = if connector.is_accessible {
                 "Manage this app in your browser."
             } else {
-                "Install this app in your browser, then reload Codex."
+                "Install this app in your browser, then reload Codex Router."
             };
             if let Some(install_url) = connector.install_url.clone() {
                 let app_id = connector.id.clone();
@@ -11462,7 +11464,7 @@ impl Notification {
             }
             Notification::EditApprovalRequested { cwd, changes } => {
                 format!(
-                    "Codex wants to edit {}",
+                    "Codex Router wants to edit {}",
                     if changes.len() == 1 {
                         #[allow(clippy::unwrap_used)]
                         display_path_for(changes.first().unwrap(), cwd)

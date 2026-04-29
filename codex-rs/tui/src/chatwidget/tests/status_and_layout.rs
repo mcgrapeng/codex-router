@@ -716,12 +716,12 @@ async fn workspace_owner_limit_states_render_state_specific_messages() {
         (
             RateLimitReachedType::WorkspaceOwnerCreditsDepleted,
             RateLimitErrorKind::Generic,
-            "You're out of credits. Your workspace is out of credits. Add credits to continue using Codex.",
+            "You're out of credits. Your workspace is out of credits. Add credits to continue using Codex Router.",
         ),
         (
             RateLimitReachedType::WorkspaceOwnerUsageLimitReached,
             RateLimitErrorKind::UsageLimit,
-            "Usage limit reached. You've reached your usage limit. Increase your limits to continue using codex.",
+            "Usage limit reached. You've reached your usage limit. Increase your limits to continue using Codex Router.",
         ),
     ];
 
@@ -1039,6 +1039,48 @@ async fn ui_snapshots_small_heights_idle() {
             .expect("draw chat idle");
         assert_chatwidget_snapshot!(name, normalized_backend_snapshot(terminal.backend()));
     }
+}
+
+#[tokio::test]
+async fn ui_snapshot_empty_session_homepage_logo() {
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+    let cfg = test_config().await;
+    let resolved_model = crate::legacy_core::test_support::get_model_offline(cfg.model.as_deref());
+    let session_telemetry = test_session_telemetry(&cfg, resolved_model.as_str());
+    let init = ChatWidgetInit {
+        config: cfg.clone(),
+        frame_requester: FrameRequester::test_dummy(),
+        app_event_tx: AppEventSender::new(unbounded_channel::<AppEvent>().0),
+        initial_user_message: None,
+        enhanced_keys_supported: false,
+        has_chatgpt_account: false,
+        model_catalog: test_model_catalog(&cfg),
+        feedback: codex_feedback::CodexFeedback::new(),
+        is_first_run: true,
+        status_account_display: None,
+        initial_plan_type: None,
+        model: Some(resolved_model),
+        startup_tooltip_override: None,
+        status_line_invalid_items_warned: Arc::new(AtomicBool::new(false)),
+        terminal_title_invalid_items_warned: Arc::new(AtomicBool::new(false)),
+        session_telemetry,
+    };
+    let mut chat = ChatWidget::new_with_app_event(init);
+    chat.bottom_pane
+        .set_placeholder_text("Ask Codex Router to do anything".to_string());
+    chat.normal_placeholder_text = "Ask Codex Router to do anything".to_string();
+    let mut terminal = Terminal::new(TestBackend::new(80, 18)).expect("create terminal");
+
+    terminal
+        .draw(|f| chat.render(f.area(), f.buffer_mut()))
+        .expect("draw chat idle");
+
+    let rendered = normalized_backend_snapshot(terminal.backend());
+    assert!(rendered.contains("____ ___  ____"));
+    assert!(rendered.contains("Codex Router"));
+
+    assert_chatwidget_snapshot!("chat_empty_session_homepage_logo", rendered);
 }
 
 // Snapshot test: ChatWidget at very small heights (task running)

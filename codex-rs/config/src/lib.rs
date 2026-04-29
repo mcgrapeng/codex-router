@@ -24,6 +24,7 @@ mod thread_config;
 pub mod types;
 
 pub const CONFIG_TOML_FILE: &str = "config.toml";
+pub const PROJECT_CONFIG_DIR_NAME: &str = ".codexrouter";
 
 pub use cloud_requirements::CloudRequirementsLoadError;
 pub use cloud_requirements::CloudRequirementsLoadErrorCode;

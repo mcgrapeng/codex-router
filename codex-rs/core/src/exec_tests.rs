@@ -643,7 +643,7 @@ fn windows_restricted_token_supports_full_read_split_write_read_carveouts() {
         },
     ]);
 
-    // The legacy workspace-write root already protects top-level `.codex`, so
+    // The legacy workspace-write root already protects top-level `.codexrouter`, so
     // the restricted-token overlay only needs the extra read-only docs carveout.
     let expected_deny_write_paths = vec![docs];
 

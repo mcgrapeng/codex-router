@@ -88,7 +88,7 @@ trust_level = "trusted"
         .arg("-C")
         .arg(&repo_root)
         .arg("seed session for resume")
-        .env("CODEX_HOME", codex_home.path())
+        .env("CODEXROUTER_HOME", codex_home.path())
         .env("OPENAI_API_KEY", "dummy")
         .env("CODEX_RS_SSE_FIXTURE", fixture_path)
         .output()
@@ -101,7 +101,7 @@ trust_level = "trusted"
 
     let mut env = HashMap::new();
     env.insert(
-        "CODEX_HOME".to_string(),
+        "CODEXROUTER_HOME".to_string(),
         codex_home.path().display().to_string(),
     );
     env.insert("OPENAI_API_KEY".to_string(), "dummy".to_string());
@@ -173,7 +173,7 @@ trust_level = "trusted"
         Ok(Err(err)) => return Err(err.into()),
         Err(_) => {
             session.terminate();
-            anyhow::bail!("timed out waiting for codex resume to exit");
+            anyhow::bail!("timed out waiting for codexrouter resume to exit");
         }
     };
     let output_text = String::from_utf8_lossy(&output);
@@ -186,7 +186,7 @@ trust_level = "trusted"
     };
     anyhow::ensure!(
         exit_code == 0 || exit_code == 130 || (exit_code == 1 && interrupt_only_output),
-        "unexpected exit code from codex resume: {exit_code}; output: {output_text}",
+        "unexpected exit code from codexrouter resume: {exit_code}; output: {output_text}",
     );
 
     let config_contents = std::fs::read_to_string(codex_home.path().join("config.toml"))?;

@@ -3,7 +3,7 @@
 //! This module mirrors the semantics used by the macOS Seatbelt sandbox:
 //! - the filesystem is read-only by default,
 //! - explicit writable roots are layered on top, and
-//! - sensitive subpaths such as `.git` and `.codex` remain read-only even when
+//! - sensitive subpaths such as `.git` and `.codexrouter` remain read-only even when
 //!   their parent root is writable.
 //!
 //! The overall Linux sandbox is composed of:
@@ -1248,7 +1248,7 @@ mod tests {
         let temp_dir = TempDir::new().expect("temp dir");
         let logical_home = temp_dir.path().join("home");
         let real_codex = temp_dir.path().join("real-codex");
-        let logical_codex = logical_home.join(".codex");
+        let logical_codex = logical_home.join(".codexrouter");
         let real_memories = real_codex.join("memories");
         let logical_memories = logical_codex.join("memories");
         std::fs::create_dir_all(&logical_home).expect("create logical home");
@@ -1428,12 +1428,12 @@ mod tests {
                 "--bind".to_string(),
                 "/".to_string(),
                 "/".to_string(),
-                // Mask the default protected .codex subpath under that writable
+                // Mask the default protected .codexrouter subpath under that writable
                 // root. Because the root is `/` in this test, the carveout path
-                // appears as `/.codex`.
+                // appears as `/.codexrouter`.
                 "--ro-bind".to_string(),
                 "/dev/null".to_string(),
-                "/.codex".to_string(),
+                "/.codexrouter".to_string(),
                 // Rebind /dev after the root bind so device nodes remain
                 // writable/usable inside the writable root.
                 "--bind".to_string(),

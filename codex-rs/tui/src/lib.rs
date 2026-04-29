@@ -88,9 +88,9 @@ mod app_event;
 mod app_event_sender;
 mod app_server_approval_conversions;
 mod app_server_session;
-mod ascii_animation;
 #[cfg(not(target_os = "linux"))]
 mod audio_device;
+mod brand;
 #[cfg(target_os = "linux")]
 #[allow(dead_code)]
 mod audio_device {
@@ -123,7 +123,6 @@ mod external_agent_config_migration;
 mod external_agent_config_migration_startup;
 mod external_editor;
 mod file_search;
-mod frames;
 mod get_git_diff;
 mod history_cell;
 pub(crate) mod insert_history;
@@ -727,7 +726,7 @@ pub async fn run_main(
     let codex_home = match find_codex_home() {
         Ok(codex_home) => codex_home.to_path_buf(),
         Err(err) => {
-            eprintln!("Error finding codex home: {err}");
+            eprintln!("Error finding Codex Router home: {err}");
             std::process::exit(1);
         }
     };
@@ -898,7 +897,7 @@ pub async fn run_main(
     // Ensure the file is only readable and writable by the current user.
     // Doing the equivalent to `chmod 600` on Windows is quite a bit more code
     // and requires the Windows API crates, so we can reconsider that when
-    // Codex CLI is officially supported on Windows.
+    // Codex Router CLI is officially supported on Windows.
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;

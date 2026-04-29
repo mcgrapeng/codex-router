@@ -1,5 +1,5 @@
 # App Server Test Client
-Quickstart for running and hitting `codex app-server`.
+Quickstart for running and hitting `codexrouter app-server`.
 
 ## Quickstart
 

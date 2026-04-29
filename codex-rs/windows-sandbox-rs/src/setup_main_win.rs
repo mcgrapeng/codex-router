@@ -346,8 +346,19 @@ pub fn main() -> Result<()> {
     let ret = real_main();
     if let Err(e) = &ret {
         // Best-effort: log unexpected top-level errors.
-        if let Ok(codex_home) = std::env::var("CODEX_HOME") {
-            let sbx_dir = sandbox_dir(Path::new(&codex_home));
+        let codexrouter_home = std::env::var("CODEXROUTER_HOME").ok().or_else(|| {
+            std::env::var("USERPROFILE")
+                .ok()
+                .filter(|user_profile| !user_profile.trim().is_empty())
+                .map(|user_profile| {
+                    Path::new(&user_profile)
+                        .join(".codexrouter")
+                        .to_string_lossy()
+                        .into_owned()
+                })
+        });
+        if let Some(codexrouter_home) = codexrouter_home {
+            let sbx_dir = sandbox_dir(Path::new(&codexrouter_home));
             let _ = std::fs::create_dir_all(&sbx_dir);
             let log_path = sbx_dir.join(LOG_FILE_NAME);
             if let Ok(mut f) = File::options().create(true).append(true).open(&log_path) {
@@ -767,7 +778,7 @@ fn run_setup_full(payload: &Payload, log: &mut File, sbx_dir: &Path) -> Result<(
 
         // These are deny-write carveouts, not deny-read paths. They may come from explicit
         // read-only-under-a-writable-root carveouts in the transformed sandbox policy, or from
-        // legacy protected children such as `.git`, `.codex`, and `.agents`.
+        // legacy protected children such as `.git`, `.codexrouter`, and `.agents`.
         //
         // Deny ACEs attach to filesystem objects; if an explicit policy carveout does not exist
         // during setup, the sandbox could otherwise create it later under a writable parent and

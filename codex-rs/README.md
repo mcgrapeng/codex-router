@@ -1,6 +1,6 @@
-# Codex CLI (Rust Implementation)
+# Codex Router CLI (Rust Implementation)
 
-We provide Codex CLI as a standalone executable to ensure a zero-dependency install.
+We provide Codex Router CLI as a standalone executable to ensure a zero-dependency install.
 
 ## Installing Codex
 
@@ -20,7 +20,7 @@ You can also install via Homebrew (`brew install --cask codex`) or download a pl
 
 ## What's new in the Rust CLI
 
-The Rust implementation is now the maintained Codex CLI and serves as the default experience. It includes a number of features that the legacy TypeScript CLI never supported.
+The Rust implementation is now the maintained Codex Router CLI and serves as the default experience. It includes a number of features that the legacy TypeScript CLI never supported.
 
 ### Config
 
@@ -30,7 +30,7 @@ Codex supports a rich set of configuration options. Note that the Rust CLI uses 
 
 #### MCP client
 
-Codex CLI functions as an MCP client that allows the Codex CLI and IDE extension to connect to MCP servers on startup. See the [`configuration documentation`](../docs/config.md#connecting-to-mcp-servers) for details.
+Codex Router CLI functions as an MCP client that allows the Codex Router CLI and IDE extension to connect to MCP servers on startup. See the [`configuration documentation`](../docs/config.md#connecting-to-mcp-servers) for details.
 
 #### MCP server (experimental)
 
@@ -55,7 +55,7 @@ Use `codex exec --ephemeral ...` to run without persisting session rollout files
 
 ### Experimenting with the Codex Sandbox
 
-To test to see what happens when a command is run under the sandbox provided by Codex, we provide the following subcommands in Codex CLI:
+To test to see what happens when a command is run under the sandbox provided by Codex, we provide the following subcommands in Codex Router CLI:
 
 ```
 # macOS
@@ -87,8 +87,8 @@ codex --sandbox workspace-write
 codex --sandbox danger-full-access
 ```
 
-The same setting can be persisted in `~/.codex/config.toml` via the top-level `sandbox_mode = "MODE"` key, e.g. `sandbox_mode = "workspace-write"`.
-In `workspace-write`, Codex also includes `~/.codex/memories` in its writable roots so memory maintenance does not require an extra approval.
+The same setting can be persisted in `~/.codexrouter/config.toml` via the top-level `sandbox_mode = "MODE"` key, e.g. `sandbox_mode = "workspace-write"`.
+In `workspace-write`, Codex also includes `~/.codexrouter/memories` in its writable roots so memory maintenance does not require an extra approval.
 
 ## Code Organization
 

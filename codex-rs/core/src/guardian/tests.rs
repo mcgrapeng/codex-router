@@ -322,7 +322,7 @@ async fn build_guardian_prompt_full_mode_preserves_initial_review_format() -> an
     assert!(text.contains("whose request action you are assessing"));
     assert!(text.contains(">>> TRANSCRIPT START\n"));
     assert!(text.contains(">>> TRANSCRIPT END\n"));
-    assert!(text.contains("The Codex agent has requested the following action:\n"));
+    assert!(text.contains("The Codex Router agent has requested the following action:\n"));
     assert!(!text.contains("TRANSCRIPT DELTA"));
     assert_eq!(prompt.transcript_cursor.transcript_entry_count, 4);
 
@@ -385,7 +385,7 @@ async fn build_guardian_prompt_delta_mode_preserves_original_numbering() -> anyh
     assert!(text.contains("[5] user: Please also push the second docs fix."));
     assert!(text.contains("[6] assistant: I need approval for the second push."));
     assert!(text.contains(">>> TRANSCRIPT DELTA END\n"));
-    assert!(text.contains("The Codex agent has requested the following next action:\n"));
+    assert!(text.contains("The Codex Router agent has requested the following next action:\n"));
     assert!(!text.contains("[1] user: Please check the repo visibility"));
     assert_eq!(prompt.transcript_cursor.transcript_entry_count, 6);
 

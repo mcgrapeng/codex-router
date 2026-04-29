@@ -11,7 +11,7 @@ echo $OPENAI_API_KEY | ./target/debug/codex-responses-api-proxy \
     --dump-dir /tmp/proxy
 
 
-# Add this to ~/.codex/config.toml:
+# Add this to ~/.codexrouter/config.toml:
 
 [model_providers.codex-responses-api-proxy]
 name = 'codex-responses-api-proxy'
@@ -77,7 +77,7 @@ codex-responses-api-proxy [--port <PORT>] [--server-info <FILE>] [--http-shutdow
 - `--http-shutdown`: If set, enables `GET /shutdown` to exit the process with code `0`.
 - `--upstream-url <URL>`: Absolute URL to forward requests to. Defaults to `https://api.openai.com/v1/responses`.
 - `--dump-dir <DIR>`: If set, writes one request JSON file and one response JSON file per accepted proxy call under this directory. Filenames use a shared sequence/timestamp prefix so each pair is easy to correlate.
-- Authentication is fixed to `Authorization: Bearer <key>` to match the Codex CLI expectations.
+- Authentication is fixed to `Authorization: Bearer <key>` to match the Codex Router CLI expectations.
 
 For Azure, for example (ensure your deployment accepts `Authorization: Bearer <key>`):
 

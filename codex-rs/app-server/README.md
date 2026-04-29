@@ -1,6 +1,6 @@
 # codex-app-server
 
-`codex app-server` is the interface Codex uses to power rich interfaces such as the [Codex VS Code extension](https://marketplace.visualstudio.com/items?itemName=openai.chatgpt).
+`codexrouter app-server` is the interface Codex Router uses to power rich interfaces such as the [Codex VS Code extension](https://marketplace.visualstudio.com/items?itemName=openai.chatgpt).
 
 ## Table of Contents
 
@@ -19,13 +19,13 @@
 
 ## Protocol
 
-Similar to [MCP](https://modelcontextprotocol.io/), `codex app-server` supports bidirectional communication using JSON-RPC 2.0 messages (with the `"jsonrpc":"2.0"` header omitted on the wire).
+Similar to [MCP](https://modelcontextprotocol.io/), `codexrouter app-server` supports bidirectional communication using JSON-RPC 2.0 messages (with the `"jsonrpc":"2.0"` header omitted on the wire).
 
 Supported transports:
 
 - stdio (`--listen stdio://`, default): newline-delimited JSON (JSONL)
 - websocket (`--listen ws://IP:PORT`): one JSON-RPC message per websocket text frame (**experimental / unsupported**)
-- unix socket (`--listen unix://` or `--listen unix://PATH`): websocket frames over `$CODEX_HOME/app-server-control/app-server-control.sock` or a custom socket path without HTTP upgrade
+- unix socket (`--listen unix://` or `--listen unix://PATH`): websocket frames over `$CODEXROUTER_HOME/app-server-control/app-server-control.sock` or a custom socket path without HTTP upgrade
 - off (`--listen off`): do not expose a local transport
 
 When running with `--listen ws://IP:PORT`, the same listener also serves basic HTTP health probes:
@@ -36,8 +36,8 @@ When running with `--listen ws://IP:PORT`, the same listener also serves basic H
 
 Websocket transport is currently experimental and unsupported. Do not rely on it for production workloads.
 
-The unix socket transport is intended for local app-server control-plane clients. `codex app-server proxy`
-opens exactly one raw stream connection to `$CODEX_HOME/app-server-control/app-server-control.sock`
+The unix socket transport is intended for local app-server control-plane clients. `codexrouter app-server proxy`
+opens exactly one raw stream connection to `$CODEXROUTER_HOME/app-server-control/app-server-control.sock`
 by default, or to `--sock PATH` when provided, and proxies bytes between that socket and stdin/stdout.
 The socket uses websocket framing directly over the Unix socket, without an HTTP upgrade handshake.
 
@@ -50,7 +50,7 @@ Security note:
   - `--ws-auth capability-token --ws-token-sha256 HEX`
   - `--ws-auth signed-bearer-token --ws-shared-secret-file /absolute/path` for HMAC-signed JWT/JWS bearer tokens, with optional `--ws-issuer`, `--ws-audience`, `--ws-max-clock-skew-seconds`
 - Clients present the credential as `Authorization: Bearer <token>` during the websocket handshake. Auth is enforced before JSON-RPC `initialize`.
-- When starting `codex app-server` manually, prefer `--ws-token-file` over passing raw bearer tokens on the command line. Store a high-entropy token in a file readable only by your user, then have your client present that token in the websocket `Authorization` header.
+- When starting `codexrouter app-server` manually, prefer `--ws-token-file` over passing raw bearer tokens on the command line. Store a high-entropy token in a file readable only by your user, then have your client present that token in the websocket `Authorization` header.
 - `--ws-token-sha256` is intended for clients that keep the raw token in a separate local secret store and only need the server to know the SHA-256 verifier. The hash may appear in process listings, but it is not sufficient to authenticate; clients still need the original raw token. Only use this mode with randomly generated high-entropy tokens, not passwords or other guessable values.
 
 Tracing/log output:
@@ -66,11 +66,11 @@ Backpressure behavior:
 
 ## Message Schema
 
-Currently, you can dump a TypeScript version of the schema using `codex app-server generate-ts`, or a JSON Schema bundle via `codex app-server generate-json-schema`. Each output is specific to the version of Codex you used to run the command, so the generated artifacts are guaranteed to match that version.
+Currently, you can dump a TypeScript version of the schema using `codexrouter app-server generate-ts`, or a JSON Schema bundle via `codexrouter app-server generate-json-schema`. Each output is specific to the version of Codex Router you used to run the command, so the generated artifacts are guaranteed to match that version.
 
 ```
-codex app-server generate-ts --out DIR
-codex app-server generate-json-schema --out DIR
+codexrouter app-server generate-ts --out DIR
+codexrouter app-server generate-json-schema --out DIR
 ```
 
 ## Core Primitives
@@ -98,7 +98,7 @@ Clients must send a single `initialize` request per transport connection before 
 
 `initialize.params.capabilities` also supports per-connection notification opt-out via `optOutNotificationMethods`, which is a list of exact method names to suppress for that connection. Matching is exact (no wildcards/prefixes). Unknown method names are accepted and ignored.
 
-Applications building on top of `codex app-server` should identify themselves via the `clientInfo` parameter.
+Applications building on top of `codexrouter app-server` should identify themselves via the `clientInfo` parameter.
 
 **Important**: `clientInfo.name` is used to identify the client for the OpenAI Compliance Logs Platform. If
 you are developing a new Codex integration that is intended for enterprise use, please contact us to get it
@@ -151,7 +151,7 @@ Example with notification opt-out:
 - `thread/turns/list` — page through a stored thread’s turn history without resuming it; supports cursor-based pagination with `sortDirection`, `nextCursor`, and `backwardsCursor`.
 - `thread/metadata/update` — patch stored thread metadata in sqlite; currently supports updating persisted `gitInfo` fields and returns the refreshed `thread`.
 - `thread/memoryMode/set` — experimental; set a thread’s persisted memory eligibility to `"enabled"` or `"disabled"` for either a loaded thread or a stored rollout; returns `{}` on success.
-- `memory/reset` — experimental; clear the current `CODEX_HOME/memories` directory and reset persisted memory stage data in sqlite while preserving existing thread memory modes; returns `{}` on success.
+- `memory/reset` — experimental; clear the current `CODEXROUTER_HOME/memories` directory and reset persisted memory stage data in sqlite while preserving existing thread memory modes; returns `{}` on success.
 - `thread/status/changed` — notification emitted when a loaded thread’s status changes (`threadId` + new `status`).
 - `thread/archive` — move a thread’s rollout file into the archived directory and attempt to move any spawned descendant thread rollout files; returns `{}` on success and emits `thread/archived` for each archived thread.
 - `thread/unsubscribe` — unsubscribe this connection from thread turn/item events. If this was the last subscriber, the server keeps the thread loaded and unloads it only after it has had no subscribers and no thread activity for 30 minutes, then emits `thread/closed`.
@@ -595,7 +595,7 @@ Invoke a skill explicitly by including `$<skill-name>` in the text input and add
     "threadId": "thr_123",
     "input": [
         { "type": "text", "text": "$skill-creator Add a new skill for triaging flaky CI and include step-by-step usage." },
-        { "type": "skill", "name": "skill-creator", "path": "/Users/me/.codex/skills/skill-creator/SKILL.md" }
+        { "type": "skill", "name": "skill-creator", "path": "/Users/me/.codexrouter/skills/skill-creator/SKILL.md" }
     ]
 } }
 { "id": 33, "result": { "turn": {
@@ -1291,7 +1291,7 @@ Invoke a skill by including `$<skill-name>` in the text input. Add a `skill` inp
       {
         "type": "skill",
         "name": "skill-creator",
-        "path": "/Users/me/.codex/skills/skill-creator/SKILL.md"
+        "path": "/Users/me/.codexrouter/skills/skill-creator/SKILL.md"
       }
     ]
   }
@@ -1360,7 +1360,7 @@ To enable or disable a skill by absolute path:
   "method": "skills/config/write",
   "id": 26,
   "params": {
-    "path": "/Users/alice/.codex/skills/skill-creator/SKILL.md",
+    "path": "/Users/alice/.codexrouter/skills/skill-creator/SKILL.md",
     "name": null,
     "enabled": false
   }
@@ -1611,16 +1611,16 @@ Some app-server methods and fields are intentionally gated behind an experimenta
 
 ### Generating stable vs experimental client schemas
 
-`codex app-server` schema generation defaults to the stable API surface (experimental fields and methods filtered out). Pass `--experimental` to include experimental methods/fields in generated TypeScript or JSON schema:
+`codexrouter app-server` schema generation defaults to the stable API surface (experimental fields and methods filtered out). Pass `--experimental` to include experimental methods/fields in generated TypeScript or JSON schema:
 
 ```bash
 # Stable-only output (default)
-codex app-server generate-ts --out DIR
-codex app-server generate-json-schema --out DIR
+codexrouter app-server generate-ts --out DIR
+codexrouter app-server generate-json-schema --out DIR
 
 # Include experimental API surface
-codex app-server generate-ts --out DIR --experimental
-codex app-server generate-json-schema --out DIR --experimental
+codexrouter app-server generate-ts --out DIR --experimental
+codexrouter app-server generate-json-schema --out DIR --experimental
 ```
 
 ### How clients opt in at runtime

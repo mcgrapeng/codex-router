@@ -94,7 +94,7 @@ describe("CodexExec", () => {
     expect(resumeIndex).toBeLessThan(imageIndex);
   });
 
-  it("allows overriding the env passed to the Codex CLI", async () => {
+  it("passes custom env without leaking process env", async () => {
     const { CodexExec } = await import("../src/exec");
     spawnMock.mockClear();
     const child = new FakeChildProcess();
@@ -131,7 +131,8 @@ describe("CodexExec", () => {
         throw new Error("Spawn args missing");
       }
 
-      expect(spawnEnv.CODEX_HOME).toBe("/tmp/codex-home");
+      expect(spawnEnv.CODEX_HOME).not.toBe("/tmp/codex-home");
+      expect(spawnEnv.CODEX_HOME).toMatch(/\.codexrouter$/);
       expect(spawnEnv.CUSTOM_ENV).toBe("custom");
       expect(spawnEnv.CODEX_ENV_SHOULD_NOT_LEAK).toBeUndefined();
       expect(spawnEnv.CODEX_API_KEY).toBe("test");
@@ -141,5 +142,66 @@ describe("CodexExec", () => {
     } finally {
       delete process.env.CODEX_ENV_SHOULD_NOT_LEAK;
     }
+  });
+
+  it("defaults CODEX_HOME to Codex Router home when env does not provide one", async () => {
+    const { CodexExec } = await import("../src/exec");
+    spawnMock.mockClear();
+    const child = new FakeChildProcess();
+    spawnMock.mockReturnValue(child as unknown as child_process.ChildProcess);
+
+    setImmediate(() => {
+      child.stdout.end();
+      child.stderr.end();
+      child.emit("exit", 0, null);
+    });
+
+    const exec = new CodexExec("codex", {
+      CODEXROUTER_HOME: "/tmp/codexrouter-home",
+    });
+
+    for await (const _ of exec.run({ input: "custom env" })) {
+      // no-op
+    }
+
+    const spawnOptions = spawnMock.mock.calls[0]?.[2] as child_process.SpawnOptions | undefined;
+    const spawnEnv = spawnOptions?.env as Record<string, string> | undefined;
+    expect(spawnEnv).toBeDefined();
+    if (!spawnEnv) {
+      throw new Error("Spawn env missing");
+    }
+
+    expect(spawnEnv.CODEX_HOME).toBe("/tmp/codexrouter-home");
+  });
+
+  it("ignores inherited CODEX_HOME when CODEXROUTER_HOME is present", async () => {
+    const { CodexExec } = await import("../src/exec");
+    spawnMock.mockClear();
+    const child = new FakeChildProcess();
+    spawnMock.mockReturnValue(child as unknown as child_process.ChildProcess);
+
+    setImmediate(() => {
+      child.stdout.end();
+      child.stderr.end();
+      child.emit("exit", 0, null);
+    });
+
+    const exec = new CodexExec("codex", {
+      CODEX_HOME: "/tmp/real-codex-home",
+      CODEXROUTER_HOME: "/tmp/codexrouter-home",
+    });
+
+    for await (const _ of exec.run({ input: "custom env" })) {
+      // no-op
+    }
+
+    const spawnOptions = spawnMock.mock.calls[0]?.[2] as child_process.SpawnOptions | undefined;
+    const spawnEnv = spawnOptions?.env as Record<string, string> | undefined;
+    expect(spawnEnv).toBeDefined();
+    if (!spawnEnv) {
+      throw new Error("Spawn env missing");
+    }
+
+    expect(spawnEnv.CODEX_HOME).toBe("/tmp/codexrouter-home");
   });
 });

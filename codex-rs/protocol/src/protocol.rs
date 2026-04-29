@@ -1167,7 +1167,7 @@ pub enum SandboxPolicy {
 /// A writable root path accompanied by a list of subpaths that should remain
 /// read‑only even when the root is writable. This is primarily used to ensure
 /// that folders containing files that could be modified to escalate the
-/// privileges of the agent (e.g. `.codex`, `.git`, notably `.git/hooks`) under
+/// privileges of the agent (e.g. `.codexrouter`, `.git`, notably `.git/hooks`) under
 /// a writable root are not modified by the agent.
 #[derive(Debug, Clone, PartialEq, Eq, JsonSchema)]
 pub struct WritableRoot {
@@ -1387,13 +1387,13 @@ impl SandboxPolicy {
                 roots
                     .into_iter()
                     .map(|writable_root| {
-                        let protect_missing_dot_codex = cwd_root
+                        let protect_missing_dot_codexrouter = cwd_root
                             .as_ref()
                             .is_some_and(|cwd_root| cwd_root == &writable_root);
                         WritableRoot {
                             read_only_subpaths: default_read_only_subpaths_for_writable_root(
                                 &writable_root,
-                                protect_missing_dot_codex,
+                                protect_missing_dot_codexrouter,
                             ),
                             root: writable_root,
                         }
@@ -1406,7 +1406,7 @@ impl SandboxPolicy {
 
 fn default_read_only_subpaths_for_writable_root(
     writable_root: &AbsolutePathBuf,
-    protect_missing_dot_codex: bool,
+    protect_missing_dot_codexrouter: bool,
 ) -> Vec<AbsolutePathBuf> {
     let mut subpaths: Vec<AbsolutePathBuf> = Vec::new();
     let top_level_git = writable_root.join(".git");
@@ -1430,12 +1430,12 @@ fn default_read_only_subpaths_for_writable_root(
         subpaths.push(top_level_agents);
     }
 
-    // Keep top-level project metadata under .codex read-only to the agent by
+    // Keep top-level project metadata under .codexrouter read-only to the agent by
     // default. For the workspace root itself, protect it even before the
     // directory exists so first-time creation still goes through the
     // protected-path approval flow.
-    let top_level_codex = writable_root.join(".codex");
-    if protect_missing_dot_codex || top_level_codex.as_path().is_dir() {
+    let top_level_codex = writable_root.join(".codexrouter");
+    if protect_missing_dot_codexrouter || top_level_codex.as_path().is_dir() {
         subpaths.push(top_level_codex);
     }
 
@@ -4510,7 +4510,7 @@ mod tests {
     fn restricted_file_system_policy_derives_effective_paths() {
         let cwd = TempDir::new().expect("tempdir");
         std::fs::create_dir_all(cwd.path().join(".agents")).expect("create .agents");
-        std::fs::create_dir_all(cwd.path().join(".codex")).expect("create .codex");
+        std::fs::create_dir_all(cwd.path().join(".codexrouter")).expect("create .codexrouter");
         let canonical_cwd = codex_utils_absolute_path::canonicalize_preserving_symlinks(cwd.path())
             .expect("canonicalize cwd");
         let cwd_absolute =
@@ -4520,8 +4520,9 @@ mod tests {
             .expect("canonical secret");
         let expected_agents = AbsolutePathBuf::from_absolute_path(canonical_cwd.join(".agents"))
             .expect("canonical .agents");
-        let expected_codex = AbsolutePathBuf::from_absolute_path(canonical_cwd.join(".codex"))
-            .expect("canonical .codex");
+        let expected_codex =
+            AbsolutePathBuf::from_absolute_path(canonical_cwd.join(".codexrouter"))
+                .expect("canonical .codexrouter");
         let policy = FileSystemSandboxPolicy::restricted(vec![
             FileSystemSandboxEntry {
                 path: FileSystemPath::Special {
@@ -4588,8 +4589,9 @@ mod tests {
         let expected_docs_public =
             AbsolutePathBuf::from_absolute_path(canonical_cwd.join("docs/public"))
                 .expect("canonical docs/public");
-        let expected_dot_codex = AbsolutePathBuf::from_absolute_path(canonical_cwd.join(".codex"))
-            .expect("canonical .codex");
+        let expected_dot_codexrouter =
+            AbsolutePathBuf::from_absolute_path(canonical_cwd.join(".codexrouter"))
+                .expect("canonical .codexrouter");
         let policy = FileSystemSandboxPolicy::restricted(vec![
             FileSystemSandboxEntry {
                 path: FileSystemPath::Special {
@@ -4614,7 +4616,7 @@ mod tests {
                 (
                     canonical_cwd,
                     vec![
-                        expected_dot_codex.to_path_buf(),
+                        expected_dot_codexrouter.to_path_buf(),
                         expected_docs.to_path_buf()
                     ],
                 ),
@@ -4629,8 +4631,9 @@ mod tests {
         let docs = AbsolutePathBuf::resolve_path_against_base("docs", cwd.path());
         let canonical_cwd = codex_utils_absolute_path::canonicalize_preserving_symlinks(cwd.path())
             .expect("canonicalize cwd");
-        let expected_dot_codex = AbsolutePathBuf::from_absolute_path(canonical_cwd.join(".codex"))
-            .expect("canonical .codex");
+        let expected_dot_codexrouter =
+            AbsolutePathBuf::from_absolute_path(canonical_cwd.join(".codexrouter"))
+                .expect("canonical .codexrouter");
         let policy = SandboxPolicy::WorkspaceWrite {
             writable_roots: vec![],
             read_only_access: ReadOnlyAccess::Restricted {
@@ -4647,7 +4650,7 @@ mod tests {
                 FileSystemSandboxPolicy::from_legacy_sandbox_policy(&policy, cwd.path())
                     .get_writable_roots_with_cwd(cwd.path())
             ),
-            vec![(canonical_cwd, vec![expected_dot_codex.to_path_buf()])]
+            vec![(canonical_cwd, vec![expected_dot_codexrouter.to_path_buf()])]
         );
     }
 

@@ -82,7 +82,7 @@ pub(crate) fn migration_copy_for_models(
     }
 
     let heading_text = Span::from(format!(
-        "Codex just got an upgrade. Introducing {target_display_name}."
+        "Codex Router just got an upgrade. Introducing {target_display_name}."
     ))
     .bold();
     let description_line: Line<'static>;
@@ -258,7 +258,7 @@ impl WidgetRef for &ModelMigrationScreen {
         if let Some(markdown) = self.copy.markdown.as_ref() {
             self.render_markdown_content(markdown, area.width, &mut column);
         } else {
-            column.push(self.heading_line());
+            column.push(Paragraph::new(self.heading_line()).wrap(Wrap { trim: false }));
             column.push(Line::from(""));
             self.render_content(&mut column);
         }
@@ -341,7 +341,7 @@ impl ModelMigrationScreen {
     fn render_menu(&self, column: &mut ColumnRenderable) {
         column.push(Line::from(""));
         column.push(
-            Paragraph::new("Choose how you'd like Codex to proceed.")
+            Paragraph::new("Choose how you'd like Codex Router to proceed.")
                 .wrap(Wrap { trim: false })
                 .inset(Insets::tlbr(
                     /*top*/ 0, /*left*/ 2, /*bottom*/ 0, /*right*/ 0,
@@ -439,7 +439,9 @@ mod tests {
                 ),
                 /*migration_markdown*/ None,
                 "gpt-5.1-codex-max".to_string(),
-                Some("Codex-optimized flagship for deep and fast reasoning.".to_string()),
+                Some(
+                    "Optimized for Codex Router. Flagship for deep and fast reasoning.".to_string(),
+                ),
                 /*can_opt_out*/ true,
             ),
         );
@@ -495,7 +497,9 @@ mod tests {
                 /*migration_copy*/ None,
                 /*migration_markdown*/ None,
                 "gpt-5.1-codex-max".to_string(),
-                Some("Codex-optimized flagship for deep and fast reasoning.".to_string()),
+                Some(
+                    "Optimized for Codex Router. Flagship for deep and fast reasoning.".to_string(),
+                ),
                 /*can_opt_out*/ false,
             ),
         );
@@ -522,7 +526,7 @@ mod tests {
                 /*migration_copy*/ None,
                 /*migration_markdown*/ None,
                 "gpt-5.1-codex-mini".to_string(),
-                Some("Optimized for codex. Cheaper, faster, but less capable.".to_string()),
+                Some("Optimized for Codex Router. Cheaper, faster, but less capable.".to_string()),
                 /*can_opt_out*/ false,
             ),
         );
