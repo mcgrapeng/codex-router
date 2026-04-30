@@ -4619,7 +4619,7 @@ pub struct Thread {
     pub cwd: AbsolutePathBuf,
     /// Version of the CLI that created the thread.
     pub cli_version: String,
-    /// Origin of the thread (CLI, VSCode, codexrouter exec, codexrouter app-server, etc.).
+    /// Origin of the thread (CLI, VSCode, coder exec, coder app-server, etc.).
     pub source: SessionSource,
     /// Optional random unique nickname assigned to an AgentControl-spawned sub-agent.
     pub agent_nickname: Option<String>,

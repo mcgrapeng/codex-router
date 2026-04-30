@@ -138,6 +138,10 @@ pub fn arg0_dispatch() -> Option<Arg0PathEntryGuard> {
     // before creating any threads/the Tokio runtime.
     load_dotenv();
 
+    if should_skip_path_alias_setup(std::env::args_os()) {
+        return None;
+    }
+
     match prepend_path_entry_for_codex_aliases() {
         Ok(path_entry) => Some(path_entry),
         Err(err) => {
@@ -147,6 +151,19 @@ pub fn arg0_dispatch() -> Option<Arg0PathEntryGuard> {
             None
         }
     }
+}
+
+fn should_skip_path_alias_setup<I, S>(args: I) -> bool
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<std::ffi::OsStr>,
+{
+    let mut args = args.into_iter();
+    let _ = args.next();
+    matches!(
+        (args.next(), args.next()),
+        (Some(flag), None) if matches!(flag.as_ref().to_str(), Some("-h" | "--help" | "-V" | "--version"))
+    )
 }
 
 /// While we want to deploy the Codex Router CLI as a single executable for simplicity,
@@ -461,6 +478,7 @@ mod tests {
     use super::linux_sandbox_exe_path;
     #[cfg(unix)]
     use super::run_main_with_arg0_guard;
+    use super::should_skip_path_alias_setup;
     #[cfg(unix)]
     use anyhow::ensure;
     use std::fs;
@@ -477,6 +495,22 @@ mod tests {
             .create(true)
             .truncate(false)
             .open(lock_path)
+    }
+
+    #[test]
+    fn skips_path_alias_setup_for_root_help_and_version() {
+        assert!(should_skip_path_alias_setup(["coder", "--version"]));
+        assert!(should_skip_path_alias_setup(["coder", "-V"]));
+        assert!(should_skip_path_alias_setup(["coder", "--help"]));
+        assert!(should_skip_path_alias_setup(["coder", "-h"]));
+
+        assert!(!should_skip_path_alias_setup(["coder"]));
+        assert!(!should_skip_path_alias_setup(["coder", "mcp", "--help"]));
+        assert!(!should_skip_path_alias_setup([
+            "coder",
+            "exec",
+            "--version"
+        ]));
     }
 
     #[test]

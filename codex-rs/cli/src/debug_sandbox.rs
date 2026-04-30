@@ -606,7 +606,7 @@ async fn load_debug_sandbox_config_with_codex_home(
     if config_uses_permission_profiles(&config) {
         if full_auto {
             anyhow::bail!(
-                "`codex sandbox --full-auto` is only supported for legacy `sandbox_mode` configs; choose a writable `[permissions]` profile instead"
+                "`coder sandbox --full-auto` is only supported for legacy `sandbox_mode` configs; choose a writable `[permissions]` profile instead"
             );
         }
         return Ok(config);

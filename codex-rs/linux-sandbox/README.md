@@ -94,4 +94,4 @@ commands that would enter the bubblewrap path.
   you can skip this in restrictive container environments with `--no-proc`.
 
 **Notes**
-- The CLI surface still uses legacy names like `codex debug landlock`.
+- The CLI surface still uses legacy names like `coder debug landlock`.

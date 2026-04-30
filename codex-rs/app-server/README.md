@@ -1,6 +1,6 @@
 # codex-app-server
 
-`codexrouter app-server` is the interface Codex Router uses to power rich interfaces such as the [Codex VS Code extension](https://marketplace.visualstudio.com/items?itemName=openai.chatgpt).
+`coder app-server` is the interface Codex Router uses to power rich interfaces such as the [Codex VS Code extension](https://marketplace.visualstudio.com/items?itemName=openai.chatgpt).
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@
 
 ## Protocol
 
-Similar to [MCP](https://modelcontextprotocol.io/), `codexrouter app-server` supports bidirectional communication using JSON-RPC 2.0 messages (with the `"jsonrpc":"2.0"` header omitted on the wire).
+Similar to [MCP](https://modelcontextprotocol.io/), `coder app-server` supports bidirectional communication using JSON-RPC 2.0 messages (with the `"jsonrpc":"2.0"` header omitted on the wire).
 
 Supported transports:
 
@@ -36,7 +36,7 @@ When running with `--listen ws://IP:PORT`, the same listener also serves basic H
 
 Websocket transport is currently experimental and unsupported. Do not rely on it for production workloads.
 
-The unix socket transport is intended for local app-server control-plane clients. `codexrouter app-server proxy`
+The unix socket transport is intended for local app-server control-plane clients. `coder app-server proxy`
 opens exactly one raw stream connection to `$CODEXROUTER_HOME/app-server-control/app-server-control.sock`
 by default, or to `--sock PATH` when provided, and proxies bytes between that socket and stdin/stdout.
 The socket uses websocket framing directly over the Unix socket, without an HTTP upgrade handshake.
@@ -50,7 +50,7 @@ Security note:
   - `--ws-auth capability-token --ws-token-sha256 HEX`
   - `--ws-auth signed-bearer-token --ws-shared-secret-file /absolute/path` for HMAC-signed JWT/JWS bearer tokens, with optional `--ws-issuer`, `--ws-audience`, `--ws-max-clock-skew-seconds`
 - Clients present the credential as `Authorization: Bearer <token>` during the websocket handshake. Auth is enforced before JSON-RPC `initialize`.
-- When starting `codexrouter app-server` manually, prefer `--ws-token-file` over passing raw bearer tokens on the command line. Store a high-entropy token in a file readable only by your user, then have your client present that token in the websocket `Authorization` header.
+- When starting `coder app-server` manually, prefer `--ws-token-file` over passing raw bearer tokens on the command line. Store a high-entropy token in a file readable only by your user, then have your client present that token in the websocket `Authorization` header.
 - `--ws-token-sha256` is intended for clients that keep the raw token in a separate local secret store and only need the server to know the SHA-256 verifier. The hash may appear in process listings, but it is not sufficient to authenticate; clients still need the original raw token. Only use this mode with randomly generated high-entropy tokens, not passwords or other guessable values.
 
 Tracing/log output:
@@ -66,11 +66,11 @@ Backpressure behavior:
 
 ## Message Schema
 
-Currently, you can dump a TypeScript version of the schema using `codexrouter app-server generate-ts`, or a JSON Schema bundle via `codexrouter app-server generate-json-schema`. Each output is specific to the version of Codex Router you used to run the command, so the generated artifacts are guaranteed to match that version.
+Currently, you can dump a TypeScript version of the schema using `coder app-server generate-ts`, or a JSON Schema bundle via `coder app-server generate-json-schema`. Each output is specific to the version of Codex Router you used to run the command, so the generated artifacts are guaranteed to match that version.
 
 ```
-codexrouter app-server generate-ts --out DIR
-codexrouter app-server generate-json-schema --out DIR
+coder app-server generate-ts --out DIR
+coder app-server generate-json-schema --out DIR
 ```
 
 ## Core Primitives
@@ -98,7 +98,7 @@ Clients must send a single `initialize` request per transport connection before 
 
 `initialize.params.capabilities` also supports per-connection notification opt-out via `optOutNotificationMethods`, which is a list of exact method names to suppress for that connection. Matching is exact (no wildcards/prefixes). Unknown method names are accepted and ignored.
 
-Applications building on top of `codexrouter app-server` should identify themselves via the `clientInfo` parameter.
+Applications building on top of `coder app-server` should identify themselves via the `clientInfo` parameter.
 
 **Important**: `clientInfo.name` is used to identify the client for the OpenAI Compliance Logs Platform. If
 you are developing a new Codex integration that is intended for enterprise use, please contact us to get it
@@ -1611,16 +1611,16 @@ Some app-server methods and fields are intentionally gated behind an experimenta
 
 ### Generating stable vs experimental client schemas
 
-`codexrouter app-server` schema generation defaults to the stable API surface (experimental fields and methods filtered out). Pass `--experimental` to include experimental methods/fields in generated TypeScript or JSON schema:
+`coder app-server` schema generation defaults to the stable API surface (experimental fields and methods filtered out). Pass `--experimental` to include experimental methods/fields in generated TypeScript or JSON schema:
 
 ```bash
 # Stable-only output (default)
-codexrouter app-server generate-ts --out DIR
-codexrouter app-server generate-json-schema --out DIR
+coder app-server generate-ts --out DIR
+coder app-server generate-json-schema --out DIR
 
 # Include experimental API surface
-codexrouter app-server generate-ts --out DIR --experimental
-codexrouter app-server generate-json-schema --out DIR --experimental
+coder app-server generate-ts --out DIR --experimental
+coder app-server generate-json-schema --out DIR --experimental
 ```
 
 ### How clients opt in at runtime

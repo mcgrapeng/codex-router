@@ -575,7 +575,7 @@ jobs:
           # Node 24 bundles npm >= 11.5.1, which trusted publishing requires.
           node-version: 24
           registry-url: "https://registry.npmjs.org"
-          scope: "@openai"
+          scope: "@zhang3f"
 
       - name: Download npm tarballs from release
         env:

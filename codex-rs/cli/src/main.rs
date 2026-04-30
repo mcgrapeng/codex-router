@@ -74,6 +74,7 @@ use codex_terminal_detection::TerminalName;
 /// If no subcommand is specified, options will be forwarded to the interactive CLI.
 #[derive(Debug, Parser)]
 #[clap(
+    name = "coder",
     author,
     version,
     // If a sub‑command is given, ignore requirements of the default args.
@@ -1849,6 +1850,18 @@ mod tests {
         let err = MultitoolCli::try_parse_from(args).expect_err("help should short-circuit");
         assert_eq!(err.kind(), clap::error::ErrorKind::DisplayHelp);
         err.to_string()
+    }
+
+    #[test]
+    fn version_output_uses_coder_command_name() {
+        let err =
+            MultitoolCli::try_parse_from(["coder", "--version"]).expect_err("version exits early");
+
+        assert_eq!(err.kind(), clap::error::ErrorKind::DisplayVersion);
+        assert_eq!(
+            err.to_string(),
+            format!("coder {}\n", env!("CARGO_PKG_VERSION"))
+        );
     }
 
     #[test]

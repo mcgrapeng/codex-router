@@ -7923,7 +7923,7 @@ class Thread(BaseModel):
     source: Annotated[
         SessionSource,
         Field(
-            description="Origin of the thread (CLI, VSCode, codexrouter exec, codexrouter app-server, etc.)."
+            description="Origin of the thread (CLI, VSCode, coder exec, coder app-server, etc.)."
         ),
     ]
     status: Annotated[

@@ -111,7 +111,7 @@ async fn run_codex_cli(
         Ok(Err(err)) => return Err(err.into()),
         Err(_) => {
             session.terminate();
-            anyhow::bail!("timed out waiting for codexrouter CLI to exit");
+            anyhow::bail!("timed out waiting for coder CLI to exit");
         }
     };
     // Drain any output that raced with the exit notification.

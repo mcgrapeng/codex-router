@@ -12,11 +12,11 @@ alias c := codex
 codex *args:
     cargo run --bin codex -- "$@"
 
-# `codex exec`
+# `coder exec`
 exec *args:
     cargo run --bin codex -- exec "$@"
 
-# Start `codex exec-server` and run codex-tui.
+# Start `coder exec-server` and run codex-tui.
 [no-cd]
 tui-with-exec-server *args:
     {{ justfile_directory() }}/scripts/run_tui_with_exec_server.sh "$@"

@@ -823,7 +823,7 @@ pub fn new_approval_decision_cell(
                 vec![
                     actor.subject().into(),
                     "approved".bold(),
-                    " codex to run ".into(),
+                    " codex router to run ".into(),
                     snippet,
                     " this time".bold(),
                 ],
@@ -838,7 +838,7 @@ pub fn new_approval_decision_cell(
                 vec![
                     actor.subject().into(),
                     "approved".bold(),
-                    " codex to always run commands that start with ".into(),
+                    " codex router to always run commands that start with ".into(),
                     snippet,
                 ],
             )
@@ -850,7 +850,7 @@ pub fn new_approval_decision_cell(
                 vec![
                     actor.subject().into(),
                     "approved".bold(),
-                    " codex to run ".into(),
+                    " codex router to run ".into(),
                     snippet,
                     " every time this session".bold(),
                 ],
@@ -885,13 +885,13 @@ pub fn new_approval_decision_cell(
                 ApprovalDecisionActor::User => vec![
                     actor.subject().into(),
                     "did not approve".bold(),
-                    " codex to run ".into(),
+                    " codex router to run ".into(),
                     snippet,
                 ],
                 ApprovalDecisionActor::Guardian => vec![
                     "Request ".into(),
                     "denied".bold(),
-                    " for codex to run ".into(),
+                    " for codex router to run ".into(),
                     snippet,
                 ],
             };
@@ -904,7 +904,7 @@ pub fn new_approval_decision_cell(
                 vec![
                     "Review ".into(),
                     "timed out".bold(),
-                    " before codex could run ".into(),
+                    " before codex router could run ".into(),
                     snippet,
                 ],
             )
@@ -949,7 +949,7 @@ pub fn new_guardian_denied_patch_request(files: Vec<String>) -> Box<dyn HistoryC
     let mut summary = vec![
         "Request ".into(),
         "denied".bold(),
-        " for codex to apply ".into(),
+        " for codex router to apply ".into(),
     ];
     if files.len() == 1 {
         summary.push("a patch touching ".into());
@@ -991,7 +991,7 @@ pub fn new_guardian_timed_out_patch_request(files: Vec<String>) -> Box<dyn Histo
     let mut summary = vec![
         "Review ".into(),
         "timed out".bold(),
-        " before codex could apply ".into(),
+        " before codex router could apply ".into(),
     ];
     if files.len() == 1 {
         summary.push("a patch touching ".into());
@@ -3580,7 +3580,7 @@ mod tests {
         let summary = Line::from(vec![
             "You ".into(),
             "approved".bold(),
-            " codex to run ".into(),
+            " codex router to run ".into(),
             "echo something really long to ensure wrapping happens".dim(),
             " this time".bold(),
         ]);
@@ -3589,11 +3589,11 @@ mod tests {
         assert_eq!(
             rendered,
             vec![
-                "✔ You approved codex to".to_string(),
-                "  run echo something".to_string(),
-                "  really long to ensure".to_string(),
-                "  wrapping happens this".to_string(),
-                "  time".to_string(),
+                "✔ You approved codex".to_string(),
+                "  router to run echo".to_string(),
+                "  something really long".to_string(),
+                "  to ensure wrapping".to_string(),
+                "  happens this time".to_string(),
             ]
         );
     }

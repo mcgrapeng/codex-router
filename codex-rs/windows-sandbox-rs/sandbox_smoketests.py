@@ -15,7 +15,7 @@ from typing import List, Optional, Tuple
 from urllib.parse import urlsplit
 
 def _resolve_codex_cmd() -> List[str]:
-    """Resolve the Codex Router CLI to invoke `codex sandbox windows`.
+    """Resolve the Codex Router CLI to invoke `coder sandbox windows`.
 
     Prefer local builds (debug first), then fall back to PATH.
     Returns the argv prefix to run Codex.
@@ -74,7 +74,7 @@ def run_sbx(
     env.update(ENV_BASE)
     if env_extra:
         env.update(env_extra)
-    # Map policy to codexrouter CLI flags
+    # Map policy to Codex Router CLI flags.
     # read-only => default; workspace-write => --full-auto
     if policy not in ("read-only", "workspace-write"):
         raise ValueError(f"unknown policy: {policy}")

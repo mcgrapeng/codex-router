@@ -53,12 +53,12 @@ pub struct AppServerClient {
 
 impl AppServerClient {
     pub fn spawn(
-        codex_bin: &str,
+        coder_bin: &str,
         config_overrides: &[String],
         output: Output,
         filtered_output: bool,
     ) -> Result<Self> {
-        let mut cmd = Command::new(codex_bin);
+        let mut cmd = Command::new(coder_bin);
         for override_kv in config_overrides {
             cmd.arg("--config").arg(override_kv);
         }
@@ -69,16 +69,16 @@ impl AppServerClient {
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
             .spawn()
-            .with_context(|| format!("failed to start `{codex_bin}` app-server"))?;
+            .with_context(|| format!("failed to start `{coder_bin}` app-server"))?;
 
         let stdin = child
             .stdin
             .take()
-            .context("codexrouter app-server stdin unavailable")?;
+            .context("coder app-server stdin unavailable")?;
         let stdout = child
             .stdout
             .take()
-            .context("codexrouter app-server stdout unavailable")?;
+            .context("coder app-server stdout unavailable")?;
 
         Ok(Self {
             child,

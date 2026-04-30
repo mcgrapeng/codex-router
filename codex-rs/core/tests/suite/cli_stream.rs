@@ -194,7 +194,7 @@ async fn exec_cli_applies_model_instructions_file() {
     );
 }
 
-/// Verify that `codex exec --profile ...` preserves the active profile when it
+/// Verify that `coder exec --profile ...` preserves the active profile when it
 /// starts the in-process app-server thread, so profile-scoped
 /// `model_instructions_file` is applied to the outbound request.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -312,7 +312,7 @@ async fn integration_creates_and_checks_session_file() -> anyhow::Result<()> {
     let fixture = cli_responses_fixture();
     let repo_root = repo_root();
 
-    // 4. Run the codexrouter CLI and invoke `exec`, which is what records a session.
+    // 4. Run the Codex Router CLI and invoke `exec`, which is what records a session.
     let bin = codex_utils_cargo_bin::cargo_bin("codex").unwrap();
     let mut cmd = AssertCommand::new(bin);
     cmd.arg("exec")

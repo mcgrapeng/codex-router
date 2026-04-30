@@ -28,11 +28,11 @@ use crate::state::ReaderEvent;
 #[derive(Parser)]
 #[command(author = "Codex", version, about = "Minimal app-server client")]
 struct Cli {
-    /// Path to the `codexrouter` CLI binary.
-    #[arg(long, default_value = "codexrouter")]
-    codex_bin: String,
+    /// Path to the `coder` CLI binary.
+    #[arg(long = "coder-bin", alias = "codex-bin", default_value = "coder")]
+    coder_bin: String,
 
-    /// Forwarded to the `codexrouter` CLI as `--config key=value`. Repeatable.
+    /// Forwarded to the `coder` CLI as `--config key=value`. Repeatable.
     #[arg(short = 'c', long = "config", value_name = "key=value", action = ArgAction::Append)]
     config_overrides: Vec<String>,
 
@@ -86,7 +86,7 @@ fn main() -> Result<()> {
     let approval_policy = parse_approval_policy(&cli.approval_policy)?;
 
     let mut client = AppServerClient::spawn(
-        &cli.codex_bin,
+        &cli.coder_bin,
         &cli.config_overrides,
         output.clone(),
         cli.final_only,

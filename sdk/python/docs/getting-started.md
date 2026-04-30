@@ -38,7 +38,7 @@ with Codex() as codex:
 
 What happened:
 
-- `Codex()` started and initialized `codexrouter app-server`.
+- `Codex()` started and initialized `coder app-server`.
 - `thread_start(...)` created a thread.
 - `thread.run("...")` started a turn, consumed events until completion, and returned the final assistant response plus collected items and usage.
 - `result.final_response` is `None` when no final-answer or phase-less assistant message item completes for the turn.

@@ -108,7 +108,7 @@ const TRACE_DISABLED_MESSAGE: &str =
 #[command(author = "Codex", version, about = "Bootstrap Codex app-server", long_about = None)]
 struct Cli {
     /// Path to the `codex` CLI binary. When set, requests use stdio by
-    /// spawning `codexrouter app-server` as a child process.
+    /// spawning `coder app-server` as a child process.
     #[arg(long, env = "CODEX_BIN", global = true)]
     codex_bin: Option<PathBuf>,
 
@@ -147,12 +147,12 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum CliCommand {
-    /// Start `codexrouter app-server` on a websocket endpoint in the background.
+    /// Start `coder app-server` on a websocket endpoint in the background.
     ///
     /// Logs are written to:
     ///   `/tmp/codex-app-server-test-client/`
     Serve {
-        /// WebSocket listen URL passed to `codexrouter app-server --listen`.
+        /// WebSocket listen URL passed to `coder app-server --listen`.
         #[arg(long, default_value = "ws://127.0.0.1:4222")]
         listen: String,
         /// Kill any process listening on the same port before starting.
@@ -548,7 +548,7 @@ fn serve(codex_bin: &Path, config_overrides: &[String], listen: &str, kill: bool
 
     let pid = child.id();
 
-    println!("started codexrouter app-server");
+    println!("started coder app-server");
     println!("listen: {listen}");
     println!("pid: {pid} (launcher process)");
     println!("log: {}", log_path.display());
@@ -1459,11 +1459,11 @@ impl CodexClient {
         let stdin = codex_app_server
             .stdin
             .take()
-            .context("codexrouter app-server stdin unavailable")?;
+            .context("coder app-server stdin unavailable")?;
         let stdout = codex_app_server
             .stdout
             .take()
-            .context("codexrouter app-server stdout unavailable")?;
+            .context("coder app-server stdout unavailable")?;
 
         Ok(Self {
             transport: ClientTransport::Stdio {
@@ -2069,10 +2069,10 @@ impl CodexClient {
                     writeln!(stdin, "{payload}")?;
                     stdin
                         .flush()
-                        .context("failed to flush payload to codexrouter app-server")?;
+                        .context("failed to flush payload to coder app-server")?;
                     return Ok(());
                 }
-                bail!("codexrouter app-server stdin closed")
+                bail!("coder app-server stdin closed")
             }
             ClientTransport::WebSocket { socket, url } => {
                 socket
@@ -2089,9 +2089,9 @@ impl CodexClient {
                 let mut response_line = String::new();
                 let bytes = stdout
                     .read_line(&mut response_line)
-                    .context("failed to read from codexrouter app-server")?;
+                    .context("failed to read from coder app-server")?;
                 if bytes == 0 {
-                    bail!("codexrouter app-server closed stdout");
+                    bail!("coder app-server closed stdout");
                 }
                 Ok(response_line)
             }
@@ -2206,14 +2206,14 @@ impl Drop for CodexClient {
         let _ = stdin.take();
 
         if let Ok(Some(status)) = child.try_wait() {
-            println!("[codexrouter app-server exited: {status}]");
+            println!("[coder app-server exited: {status}]");
             return;
         }
 
         let deadline = SystemTime::now() + APP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT;
         loop {
             if let Ok(Some(status)) = child.try_wait() {
-                println!("[codexrouter app-server exited: {status}]");
+                println!("[coder app-server exited: {status}]");
                 return;
             }
 

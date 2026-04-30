@@ -134,7 +134,7 @@ class AppServerConfig:
 
 
 class AppServerClient:
-    """Synchronous typed JSON-RPC client for `codexrouter app-server` over stdio."""
+    """Synchronous typed JSON-RPC client for `coder app-server` over stdio."""
 
     def __init__(
         self,

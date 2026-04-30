@@ -1,5 +1,5 @@
 # App Server Test Client
-Quickstart for running and hitting `codexrouter app-server`.
+Quickstart for running and hitting `coder app-server`.
 
 ## Quickstart
 
@@ -7,7 +7,7 @@ Run from `<reporoot>/codex-rs`.
 
 ```bash
 # 1) Build debug codex binary
-cargo build -p codex-cli --bin codex
+cargo build -p codex-cli --bin  coder
 
 # 2) Start websocket app-server in background
 cargo run -p codex-app-server-test-client -- \

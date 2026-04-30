@@ -49,7 +49,7 @@ cwd: AbsolutePathBuf,
  */
 cliVersion: string,
 /**
- * Origin of the thread (CLI, VSCode, codexrouter exec, codexrouter app-server, etc.).
+ * Origin of the thread (CLI, VSCode, coder exec, coder app-server, etc.).
  */
 source: SessionSource,
 /**
