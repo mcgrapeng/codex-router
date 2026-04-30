@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import time
 import zipfile
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -176,13 +177,18 @@ def main() -> int:
     if not workflow_url:
         workflow_url = DEFAULT_WORKFLOW_URL
 
-    workflow_id = workflow_url.rstrip("/").split("/")[-1]
+    workflow_repo, workflow_id = parse_workflow_url(workflow_url)
     print(f"Downloading native artifacts from workflow {workflow_id}...")
 
     with _gha_group(f"Download native artifacts from workflow {workflow_id}"):
         with tempfile.TemporaryDirectory(prefix="codex-native-artifacts-") as artifacts_dir_str:
             artifacts_dir = Path(artifacts_dir_str)
-            _download_artifacts(workflow_id, artifacts_dir)
+            _download_artifacts(
+                workflow_repo,
+                workflow_id,
+                artifacts_dir,
+                selected_targets=args.targets,
+            )
             install_binary_components(
                 artifacts_dir,
                 vendor_dir,
@@ -267,18 +273,67 @@ def fetch_rg(
     return [results[target] for target in targets]
 
 
-def _download_artifacts(workflow_id: str, dest_dir: Path) -> None:
-    cmd = [
-        "gh",
-        "run",
-        "download",
-        "--dir",
-        str(dest_dir),
-        "--repo",
-        "openai/codex",
-        workflow_id,
-    ]
-    subprocess.check_call(cmd)
+def parse_workflow_url(workflow_url: str) -> tuple[str, str]:
+    parsed = urlparse(workflow_url)
+    parts = [part for part in parsed.path.split("/") if part]
+
+    try:
+        actions_index = parts.index("actions")
+    except ValueError as exc:
+        raise ValueError(f"Invalid workflow URL: {workflow_url}") from exc
+
+    if actions_index < 2 or len(parts) <= actions_index + 2 or parts[actions_index + 1] != "runs":
+        raise ValueError(f"Invalid workflow URL: {workflow_url}")
+
+    return f"{parts[actions_index - 2]}/{parts[actions_index - 1]}", parts[actions_index + 2]
+
+
+def download_artifacts_from_workflow(
+    workflow_url: str,
+    dest_dir: Path,
+    *,
+    selected_targets: Sequence[str] | None = None,
+) -> None:
+    workflow_repo, workflow_id = parse_workflow_url(workflow_url)
+    _download_artifacts(workflow_repo, workflow_id, dest_dir, selected_targets=selected_targets)
+
+
+def _download_artifacts(
+    workflow_repo: str,
+    workflow_id: str,
+    dest_dir: Path,
+    *,
+    selected_targets: Sequence[str] | None = None,
+) -> None:
+    artifact_names = list(selected_targets or [])
+    if not artifact_names:
+        _run_download_artifacts_command(workflow_repo, workflow_id, dest_dir, artifact_name=None)
+        return
+
+    for artifact_name in artifact_names:
+        _run_download_artifacts_command(workflow_repo, workflow_id, dest_dir, artifact_name)
+
+
+def _run_download_artifacts_command(
+    workflow_repo: str,
+    workflow_id: str,
+    dest_dir: Path,
+    artifact_name: str | None,
+) -> None:
+    cmd = ["gh", "run", "download", "--dir", str(dest_dir), "--repo", workflow_repo]
+    if artifact_name is not None:
+        cmd.extend(["--name", artifact_name])
+    cmd.append(workflow_id)
+
+    attempts = 3
+    for attempt in range(1, attempts + 1):
+        try:
+            subprocess.check_call(cmd)
+            return
+        except subprocess.CalledProcessError:
+            if attempt == attempts:
+                raise
+            time.sleep(attempt * 2)
 
 
 def install_binary_components(
