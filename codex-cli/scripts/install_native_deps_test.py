@@ -2,6 +2,7 @@
 """Tests for installing Codex Router native npm dependencies."""
 
 import importlib.util
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -54,7 +55,7 @@ class InstallNativeDepsTests(unittest.TestCase):
                 "run",
                 "download",
                 "--dir",
-                str(dest_dir),
+                str(dest_dir / "aarch64-apple-darwin"),
                 "--repo",
                 "mcgrapeng/codex-router",
                 "--name",
@@ -68,7 +69,7 @@ class InstallNativeDepsTests(unittest.TestCase):
                 "run",
                 "download",
                 "--dir",
-                str(dest_dir),
+                str(dest_dir / "x86_64-apple-darwin"),
                 "--repo",
                 "mcgrapeng/codex-router",
                 "--name",
@@ -77,6 +78,22 @@ class InstallNativeDepsTests(unittest.TestCase):
             ]
         )
         self.assertEqual(check_call.call_count, 2)
+
+    def test_load_manifest_falls_back_to_direct_json_parse_without_dotslash(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manifest_path = Path(temp_dir) / "rg"
+            manifest_path.write_text(
+                '#!/usr/bin/env dotslash\n\n{"platforms": {"macos-aarch64": {}}}\n'
+            )
+
+            with patch.object(
+                install_native_deps.subprocess,
+                "check_output",
+                side_effect=FileNotFoundError("dotslash"),
+            ):
+                manifest = install_native_deps._load_manifest(manifest_path)
+
+        self.assertEqual(manifest, {"platforms": {"macos-aarch64": {}}})
 
 
 if __name__ == "__main__":

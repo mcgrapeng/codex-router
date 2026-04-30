@@ -311,7 +311,12 @@ def _download_artifacts(
         return
 
     for artifact_name in artifact_names:
-        _run_download_artifacts_command(workflow_repo, workflow_id, dest_dir, artifact_name)
+        _run_download_artifacts_command(
+            workflow_repo,
+            workflow_id,
+            dest_dir / artifact_name,
+            artifact_name,
+        )
 
 
 def _run_download_artifacts_command(
@@ -525,7 +530,13 @@ def extract_archive(
 
 def _load_manifest(manifest_path: Path) -> dict:
     cmd = ["dotslash", "--", "parse", str(manifest_path)]
-    stdout = subprocess.check_output(cmd, text=True)
+    try:
+        stdout = subprocess.check_output(cmd, text=True)
+    except FileNotFoundError:
+        lines = manifest_path.read_text().splitlines()
+        if lines and lines[0].startswith("#!"):
+            lines = lines[1:]
+        stdout = "\n".join(lines)
     try:
         manifest = json.loads(stdout)
     except json.JSONDecodeError as exc:
