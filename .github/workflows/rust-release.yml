@@ -103,7 +103,39 @@ jobs:
           path: codex-rs/target/**/cargo-timings/cargo-timing.html
           if-no-files-found: warn
 
+      - name: Check macOS signing secrets
+        id: macos_signing
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_NOTARIZATION_KEY_P8: ${{ secrets.APPLE_NOTARIZATION_KEY_P8 }}
+          APPLE_NOTARIZATION_KEY_ID: ${{ secrets.APPLE_NOTARIZATION_KEY_ID }}
+          APPLE_NOTARIZATION_ISSUER_ID: ${{ secrets.APPLE_NOTARIZATION_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+
+          missing=()
+          for var in \
+            APPLE_CERTIFICATE \
+            APPLE_CERTIFICATE_PASSWORD \
+            APPLE_NOTARIZATION_KEY_P8 \
+            APPLE_NOTARIZATION_KEY_ID \
+            APPLE_NOTARIZATION_ISSUER_ID; do
+            if [[ -z "${!var:-}" ]]; then
+              missing+=("$var")
+            fi
+          done
+
+          if ((${#missing[@]} > 0)); then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            printf 'Skipping macOS signing; missing Apple signing secrets: %s\n' "${missing[*]}"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: MacOS code signing (binaries)
+        if: ${{ steps.macos_signing.outputs.enabled == 'true' }}
         uses: ./.github/actions/macos-code-sign
         with:
           target: ${{ matrix.target }}
@@ -126,9 +158,9 @@ jobs:
           volname="Codex (${target})"
           dmg_path="${release_dir}/codex-${target}.dmg"
 
-          # The previous "MacOS code signing (binaries)" step signs + notarizes the
-          # built artifacts in `${release_dir}`. This step packages *those same*
-          # signed binaries into a dmg.
+          # If signing is enabled, the previous step signs + notarizes the built
+          # artifacts in `${release_dir}`. Without Apple signing secrets, this
+          # packages the unsigned binaries so npm releases are not blocked.
           codex_binary_path="${release_dir}/codex"
           proxy_binary_path="${release_dir}/codex-responses-api-proxy"
 
@@ -161,6 +193,7 @@ jobs:
           fi
 
       - name: MacOS code signing (dmg)
+        if: ${{ steps.macos_signing.outputs.enabled == 'true' }}
         uses: ./.github/actions/macos-code-sign
         with:
           target: ${{ matrix.target }}
@@ -453,6 +486,15 @@ jobs:
                 exit 1
                 ;;
             esac
+
+            package_json="$(tar -xOf "${tarball}" package/package.json)"
+            package_name="$(node -e 'const pkg = JSON.parse(process.argv[1]); process.stdout.write(pkg.name);' "${package_json}")"
+            package_version="$(node -e 'const pkg = JSON.parse(process.argv[1]); process.stdout.write(pkg.version);' "${package_json}")"
+
+            if npm view "${package_name}@${package_version}" version --json > /dev/null 2>&1; then
+              echo "Skipping already-published npm package ${package_name}@${package_version}"
+              continue
+            fi
 
             publish_cmd=(npm publish "${GITHUB_WORKSPACE}/${tarball}")
             if [[ -n "${tag}" ]]; then
