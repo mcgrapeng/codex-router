@@ -140,6 +140,13 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--target",
+        dest="targets",
+        action="append",
+        choices=BINARY_TARGETS,
+        help="Limit installation to the specified target triple. May be repeated.",
+    )
+    parser.add_argument(
         "root",
         nargs="?",
         type=Path,
@@ -180,12 +187,13 @@ def main() -> int:
                 artifacts_dir,
                 vendor_dir,
                 [BINARY_COMPONENTS[name] for name in components if name in BINARY_COMPONENTS],
+                selected_targets=args.targets,
             )
 
     if "rg" in components:
         with _gha_group("Fetch ripgrep binaries"):
             print("Fetching ripgrep binaries...")
-            fetch_rg(vendor_dir, DEFAULT_RG_TARGETS, manifest_path=RG_MANIFEST)
+            fetch_rg(vendor_dir, args.targets or DEFAULT_RG_TARGETS, manifest_path=RG_MANIFEST)
 
     print(f"Installed native dependencies into {vendor_dir}")
     return 0
@@ -277,12 +285,19 @@ def install_binary_components(
     artifacts_dir: Path,
     vendor_dir: Path,
     selected_components: Sequence[BinaryComponent],
+    selected_targets: Sequence[str] | None = None,
 ) -> None:
     if not selected_components:
         return
 
+    target_filter = set(selected_targets) if selected_targets else None
+
     for component in selected_components:
         component_targets = list(component.targets or BINARY_TARGETS)
+        if target_filter is not None:
+            component_targets = [target for target in component_targets if target in target_filter]
+        if not component_targets:
+            continue
 
         print(
             f"Installing {component.binary_basename} binaries for targets: "

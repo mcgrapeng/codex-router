@@ -65,37 +65,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-15-xlarge
+          - runner: macos-15
             target: aarch64-apple-darwin
-          - runner: macos-15-xlarge
+          - runner: macos-15
             target: x86_64-apple-darwin
-          - runner: ubuntu-24.04
-            target: x86_64-unknown-linux-musl
-          - runner: ubuntu-24.04
-            target: x86_64-unknown-linux-gnu
-          - runner: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-musl
-          - runner: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - name: Print runner specs (Linux)
-        if: ${{ runner.os == 'Linux' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          cpu_model="$(lscpu | awk -F: '/Model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}')"
-          total_ram="$(awk '/MemTotal/ {printf "%.1f GiB\n", $2 / 1024 / 1024}' /proc/meminfo)"
-          echo "Runner: ${RUNNER_NAME:-unknown}"
-          echo "OS: $(uname -a)"
-          echo "CPU model: ${cpu_model}"
-          echo "Logical CPUs: $(nproc)"
-          echo "Total RAM: ${total_ram}"
-          echo "Disk usage:"
-          df -h .
       - name: Print runner specs (macOS)
-        if: ${{ runner.os == 'macOS' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -109,112 +86,9 @@ jobs:
           echo "Total RAM: ${total_ram}"
           echo "Disk usage:"
           df -h .
-      - name: Install Linux bwrap build dependencies
-        if: ${{ runner.os == 'Linux' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update -y
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends pkg-config libcap-dev
-      - name: Install UBSan runtime (musl)
-        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-musl' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get update -y
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libubsan1
-          fi
       - uses: dtolnay/rust-toolchain@a0b273b48ed29de4470960879e8381ff45632f26 # 1.93.0
         with:
           targets: ${{ matrix.target }}
-
-      - if: ${{ matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-musl'}}
-        name: Use hermetic Cargo home (musl)
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo_home="${GITHUB_WORKSPACE}/.cargo-home"
-          mkdir -p "${cargo_home}/bin"
-          echo "CARGO_HOME=${cargo_home}" >> "$GITHUB_ENV"
-          echo "${cargo_home}/bin" >> "$GITHUB_PATH"
-          : > "${cargo_home}/config.toml"
-
-      - if: ${{ matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-musl'}}
-        name: Install Zig
-        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
-        with:
-          version: 0.14.0
-
-      - if: ${{ matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-musl'}}
-        name: Install musl build tools
-        env:
-          TARGET: ${{ matrix.target }}
-        run: bash "${GITHUB_WORKSPACE}/.github/scripts/install-musl-build-tools.sh"
-
-      - if: ${{ matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-musl'}}
-        name: Configure rustc UBSan wrapper (musl host)
-        shell: bash
-        run: |
-          set -euo pipefail
-          ubsan=""
-          if command -v ldconfig >/dev/null 2>&1; then
-            ubsan="$(ldconfig -p | grep -m1 'libubsan\.so\.1' | sed -E 's/.*=> (.*)$/\1/')"
-          fi
-          wrapper_root="${RUNNER_TEMP:-/tmp}"
-          wrapper="${wrapper_root}/rustc-ubsan-wrapper"
-          cat > "${wrapper}" <<EOF
-          #!/usr/bin/env bash
-          set -euo pipefail
-          if [[ -n "${ubsan}" ]]; then
-            export LD_PRELOAD="${ubsan}\${LD_PRELOAD:+:\${LD_PRELOAD}}"
-          fi
-          exec "\$1" "\${@:2}"
-          EOF
-          chmod +x "${wrapper}"
-          echo "RUSTC_WRAPPER=${wrapper}" >> "$GITHUB_ENV"
-          echo "RUSTC_WORKSPACE_WRAPPER=" >> "$GITHUB_ENV"
-
-      - if: ${{ matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-musl'}}
-        name: Clear sanitizer flags (musl)
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Avoid problematic aws-lc jitter entropy code path on musl builders.
-          echo "AWS_LC_SYS_NO_JITTER_ENTROPY=1" >> "$GITHUB_ENV"
-          target_no_jitter="AWS_LC_SYS_NO_JITTER_ENTROPY_${{ matrix.target }}"
-          target_no_jitter="${target_no_jitter//-/_}"
-          echo "${target_no_jitter}=1" >> "$GITHUB_ENV"
-
-          # Clear global Rust flags so host/proc-macro builds don't pull in UBSan.
-          echo "RUSTFLAGS=" >> "$GITHUB_ENV"
-          echo "CARGO_ENCODED_RUSTFLAGS=" >> "$GITHUB_ENV"
-          echo "RUSTDOCFLAGS=" >> "$GITHUB_ENV"
-          # Override any runner-level Cargo config rustflags as well.
-          echo "CARGO_BUILD_RUSTFLAGS=" >> "$GITHUB_ENV"
-          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS=" >> "$GITHUB_ENV"
-          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS=" >> "$GITHUB_ENV"
-          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS=" >> "$GITHUB_ENV"
-          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS=" >> "$GITHUB_ENV"
-
-          sanitize_flags() {
-            local input="$1"
-            input="${input//-fsanitize=undefined/}"
-            input="${input//-fno-sanitize-recover=undefined/}"
-            input="${input//-fno-sanitize-trap=undefined/}"
-            echo "$input"
-          }
-
-          cflags="$(sanitize_flags "${CFLAGS-}")"
-          cxxflags="$(sanitize_flags "${CXXFLAGS-}")"
-          echo "CFLAGS=${cflags}" >> "$GITHUB_ENV"
-          echo "CXXFLAGS=${cxxflags}" >> "$GITHUB_ENV"
-
-      - if: ${{ matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-musl' }}
-        name: Configure musl rusty_v8 artifact overrides and verify checksums
-        uses: ./.github/actions/setup-rusty-v8-musl
-        with:
-          target: ${{ matrix.target }}
 
       - name: Cargo build
         shell: bash
@@ -229,15 +103,7 @@ jobs:
           path: codex-rs/target/**/cargo-timings/cargo-timing.html
           if-no-files-found: warn
 
-      - if: ${{ contains(matrix.target, 'linux') }}
-        name: Cosign Linux artifacts
-        uses: ./.github/actions/linux-code-sign
-        with:
-          target: ${{ matrix.target }}
-          artifacts-dir: ${{ github.workspace }}/codex-rs/target/${{ matrix.target }}/release
-
-      - if: ${{ runner.os == 'macOS' }}
-        name: MacOS code signing (binaries)
+      - name: MacOS code signing (binaries)
         uses: ./.github/actions/macos-code-sign
         with:
           target: ${{ matrix.target }}
@@ -249,8 +115,7 @@ jobs:
           apple-notarization-key-id: ${{ secrets.APPLE_NOTARIZATION_KEY_ID }}
           apple-notarization-issuer-id: ${{ secrets.APPLE_NOTARIZATION_ISSUER_ID }}
 
-      - if: ${{ runner.os == 'macOS' }}
-        name: Build macOS dmg
+      - name: Build macOS dmg
         shell: bash
         run: |
           set -euo pipefail
@@ -295,8 +160,7 @@ jobs:
             exit 1
           fi
 
-      - if: ${{ runner.os == 'macOS' }}
-        name: MacOS code signing (dmg)
+      - name: MacOS code signing (dmg)
         uses: ./.github/actions/macos-code-sign
         with:
           target: ${{ matrix.target }}
@@ -317,14 +181,7 @@ jobs:
           cp target/${{ matrix.target }}/release/codex "$dest/codex-${{ matrix.target }}"
           cp target/${{ matrix.target }}/release/codex-responses-api-proxy "$dest/codex-responses-api-proxy-${{ matrix.target }}"
 
-          if [[ "${{ matrix.target }}" == *linux* ]]; then
-            cp target/${{ matrix.target }}/release/codex.sigstore "$dest/codex-${{ matrix.target }}.sigstore"
-            cp target/${{ matrix.target }}/release/codex-responses-api-proxy.sigstore "$dest/codex-responses-api-proxy-${{ matrix.target }}.sigstore"
-          fi
-
-          if [[ "${{ matrix.target }}" == *apple-darwin ]]; then
-            cp target/${{ matrix.target }}/release/codex-${{ matrix.target }}.dmg "$dest/codex-${{ matrix.target }}.dmg"
-          fi
+          cp target/${{ matrix.target }}/release/codex-${{ matrix.target }}.dmg "$dest/codex-${{ matrix.target }}.dmg"
 
       - name: Compress artifacts
         shell: bash
@@ -370,34 +227,9 @@ jobs:
           path: |
             codex-rs/dist/${{ matrix.target }}/*
 
-  build-windows:
-    needs: tag-check
-    permissions:
-      contents: read
-      id-token: write
-    uses: ./.github/workflows/rust-release-windows.yml
-    with:
-      release-lto: ${{ contains(github.ref_name, '-alpha') && 'thin' || 'fat' }}
-    secrets: inherit
-
-  argument-comment-lint-release-assets:
-    name: argument-comment-lint release assets
-    needs: tag-check
-    uses: ./.github/workflows/rust-release-argument-comment-lint.yml
-    with:
-      publish: true
-
-  zsh-release-assets:
-    name: zsh release assets
-    needs: tag-check
-    uses: ./.github/workflows/rust-release-zsh.yml
-
   release:
     needs:
       - build
-      - build-windows
-      - argument-comment-lint-release-assets
-      - zsh-release-assets
     name: release
     runs-on: ubuntu-latest
     permissions:
@@ -442,7 +274,6 @@ jobs:
 
       - name: Delete entries from dist/ that should not go in the release
         run: |
-          rm -rf dist/windows-binaries*
           # cargo-timing.html appears under multiple target-specific directories.
           # If included in files: dist/**, release upload races on duplicate
           # asset names and can fail with 404s.
@@ -504,9 +335,7 @@ jobs:
         run: |
           ./scripts/stage_npm_packages.py \
             --release-version "$RELEASE_VERSION" \
-            --package codex \
-            --package codex-responses-api-proxy \
-            --package codex-sdk
+            --package codex
 
       - name: Stage installer scripts
         run: |
@@ -530,20 +359,6 @@ jobs:
         with:
           tag: ${{ github.ref_name }}
           config: .github/dotslash-config.json
-
-      - uses: facebook/dotslash-publish-release@9c9ec027515c34db9282a09a25a9cab5880b2c52 # v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag: ${{ github.ref_name }}
-          config: .github/dotslash-zsh-config.json
-
-      - uses: facebook/dotslash-publish-release@9c9ec027515c34db9282a09a25a9cab5880b2c52 # v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag: ${{ github.ref_name }}
-          config: .github/dotslash-argument-comment-lint-config.json
 
       - name: Trigger developers.openai.com deploy
         # Only trigger the deploy if the release is not a pre-release.
@@ -592,11 +407,7 @@ jobs:
           mkdir -p dist/npm
           patterns=(
             "codex-npm-${version}.tgz"
-            "codex-npm-linux-*-${version}.tgz"
             "codex-npm-darwin-*-${version}.tgz"
-            "codex-npm-win32-*-${version}.tgz"
-            "codex-responses-api-proxy-npm-${version}.tgz"
-            "codex-sdk-npm-${version}.tgz"
           )
           for pattern in "${patterns[@]}"; do
             gh release download "$tag" \
@@ -629,12 +440,12 @@ jobs:
             tag=""
 
             case "${filename}" in
-              codex-npm-linux-*-"${VERSION}".tgz|codex-npm-darwin-*-"${VERSION}".tgz|codex-npm-win32-*-"${VERSION}".tgz)
+              codex-npm-darwin-*-"${VERSION}".tgz)
                 platform="${filename#codex-npm-}"
                 platform="${platform%-${VERSION}.tgz}"
                 tag="${prefix}${platform}"
                 ;;
-              codex-npm-"${VERSION}".tgz|codex-responses-api-proxy-npm-"${VERSION}".tgz|codex-sdk-npm-"${VERSION}".tgz)
+              codex-npm-"${VERSION}".tgz)
                 tag="${NPM_TAG}"
                 ;;
               *)
@@ -666,29 +477,6 @@ jobs:
 
             exit "${publish_status}"
           done
-
-  winget:
-    name: winget
-    needs: release
-    # Only publish stable/mainline releases to WinGet; pre-releases include a
-    # '-' in the semver string (e.g., 1.2.3-alpha.1).
-    if: ${{ !contains(needs.release.outputs.version, '-') }}
-    # This job only invokes a GitHub Action to open/update the winget-pkgs PR;
-    # it does not execute Windows-only tooling, so Linux is sufficient.
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    steps:
-      - name: Publish to WinGet
-        uses: vedantmgoyal9/winget-releaser@7bd472be23763def6e16bd06cc8b1cdfab0e2fd5
-        with:
-          identifier: OpenAI.Codex
-          version: ${{ needs.release.outputs.version }}
-          release-tag: ${{ needs.release.outputs.tag }}
-          fork-user: openai-oss-forks
-          installers-regex: '^codex-(?:x86_64|aarch64)-pc-windows-msvc\.exe\.zip$'
-          token: ${{ secrets.WINGET_PUBLISH_PAT }}
 
   update-branch:
     name: Update latest-alpha-cli branch

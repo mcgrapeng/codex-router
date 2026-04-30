@@ -39,9 +39,12 @@ class BuildNpmPackageTests(unittest.TestCase):
             self.assertFalse((staging_dir / "bin" / "codexrouter-init.js").exists())
 
             optional_deps = package_json["optionalDependencies"]
-            self.assertTrue(optional_deps)
-            self.assertTrue(
-                all(name.startswith("@zhang3f/codexrouter-") for name in optional_deps)
+            self.assertEqual(
+                optional_deps,
+                {
+                    "@zhang3f/codexrouter-darwin-x64": f"{version}-darwin-x64",
+                    "@zhang3f/codexrouter-darwin-arm64": f"{version}-darwin-arm64",
+                },
             )
             self.assertFalse(any(value.startswith("npm:") for value in optional_deps.values()))
 
