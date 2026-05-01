@@ -1435,9 +1435,7 @@ impl HistoryCell for SessionHeaderHistoryCell {
 
         let mut lines = crate::brand::codex_router_logo_lines(inner_width as u16);
         lines.extend([
-            make_row(Vec::new()),
             make_row(title_spans),
-            make_row(Vec::new()),
             make_row(model_spans),
             make_row(dir_spans),
         ]);
@@ -4106,7 +4104,7 @@ mod tests {
 
         let rendered = render_lines(&cell.display_lines(/*width*/ 80)).join("\n");
 
-        assert!(rendered.contains("_____          _"));
+        assert!(rendered.contains("####  ###  ####"));
         assert!(rendered.contains("Codex Router"));
     }
 
@@ -4123,7 +4121,7 @@ mod tests {
         let rendered = render_lines(&cell.display_lines(/*width*/ 40)).join("\n");
 
         assert!(rendered.contains("codex router"));
-        assert!(!rendered.contains("_____          _"));
+        assert!(!rendered.contains("####  ###  ####"));
     }
 
     #[test]
