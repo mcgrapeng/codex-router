@@ -49,6 +49,12 @@ class RustReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('npm view "${package_name}@${package_version}" version --json', workflow)
         self.assertIn("Skipping already-published npm package", workflow)
 
+    def test_npm_publish_uses_token_and_public_access_for_scoped_packages(self) -> None:
+        workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}", workflow)
+        self.assertIn('publish_cmd=(npm publish "${GITHUB_WORKSPACE}/${tarball}" --access public)', workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
