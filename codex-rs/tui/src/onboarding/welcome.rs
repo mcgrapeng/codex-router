@@ -95,14 +95,14 @@ mod tests {
             FrameRequester::test_dummy(),
             /*animations_enabled*/ true,
         );
-        let area = Rect::new(0, 0, crate::brand::CODEX_ROUTER_LOGO_WIDTH as u16, 12);
+        let area = Rect::new(0, 0, crate::brand::CODEX_ROUTER_LOGO_WIDTH as u16, 9);
         let mut buf = Buffer::empty(area);
         (&widget).render(area, &mut buf);
 
-        let logo_row = row_containing(&buf, "____ ___  ____");
+        let logo_row = row_containing(&buf, "_____          _");
         let welcome_row = row_containing(&buf, "Welcome");
         assert_eq!(logo_row, Some(0));
-        assert_eq!(welcome_row, Some(6));
+        assert_eq!(welcome_row, Some(7));
     }
 
     #[test]

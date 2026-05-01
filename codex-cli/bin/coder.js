@@ -2,7 +2,7 @@
 // Unified entry point for the Codex Router CLI.
 
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "path";
@@ -139,6 +139,22 @@ function resolveCodexRouterHome() {
   return path.join(os.homedir(), ".codexrouter");
 }
 
+function ensureCodexRouterConfig(codexRouterHome) {
+  const configPath = path.join(codexRouterHome, "config.toml");
+  if (existsSync(configPath)) {
+    return;
+  }
+
+  writeFileSync(
+    configPath,
+    [
+      "# Codex Router config",
+      "# This file is intentionally stored under .codexrouter so coder stays isolated from Codex.",
+      "",
+    ].join("\n"),
+  );
+}
+
 const additionalDirs = [];
 const pathDir = path.join(archRoot, "path");
 if (existsSync(pathDir)) {
@@ -147,6 +163,7 @@ if (existsSync(pathDir)) {
 const updatedPath = getUpdatedPath(additionalDirs);
 const codexRouterHome = resolveCodexRouterHome();
 mkdirSync(codexRouterHome, { recursive: true });
+ensureCodexRouterConfig(codexRouterHome);
 
 const env = {
   ...process.env,

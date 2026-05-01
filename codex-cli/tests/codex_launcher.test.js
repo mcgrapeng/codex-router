@@ -118,10 +118,13 @@ test("launcher replaces inherited CODEX_HOME with the default Codex Router home"
 
   const inheritedCodexHome = path.join(result.homeDir, ".codex");
   const expectedCodexRouterHome = path.join(result.homeDir, ".codexrouter");
+  const expectedConfigPath = path.join(expectedCodexRouterHome, "config.toml");
   assert.equal(result.capture.CODEX_HOME, expectedCodexRouterHome);
   assert.notEqual(result.capture.CODEX_HOME, inheritedCodexHome);
   assert.equal(result.capture.CODEX_MANAGED_BY_NPM, "1");
   assert.equal(existsSync(expectedCodexRouterHome), true);
+  assert.equal(existsSync(expectedConfigPath), true);
+  assert.match(readFileSync(expectedConfigPath, "utf8"), /Codex Router config/);
   assert.equal(existsSync(inheritedCodexHome), false);
 });
 
@@ -146,6 +149,7 @@ test("postinstall creates the default Codex Router home without touching .codex"
   const tempHome = mkdtempSync(path.join(os.tmpdir(), "codexrouter-postinstall-"));
   const inheritedCodexHome = path.join(tempHome, ".codex");
   const expectedCodexRouterHome = path.join(tempHome, ".codexrouter");
+  const expectedConfigPath = path.join(expectedCodexRouterHome, "config.toml");
 
   const env = {
     ...process.env,
@@ -165,5 +169,7 @@ test("postinstall creates the default Codex Router home without touching .codex"
   );
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.equal(existsSync(expectedCodexRouterHome), true);
+  assert.equal(existsSync(expectedConfigPath), true);
+  assert.match(readFileSync(expectedConfigPath, "utf8"), /Codex Router config/);
   assert.equal(existsSync(inheritedCodexHome), false);
 });

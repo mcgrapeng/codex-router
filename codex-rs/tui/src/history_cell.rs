@@ -4106,7 +4106,7 @@ mod tests {
 
         let rendered = render_lines(&cell.display_lines(/*width*/ 80)).join("\n");
 
-        assert!(rendered.contains("____ ___  ____"));
+        assert!(rendered.contains("_____          _"));
         assert!(rendered.contains("Codex Router"));
     }
 
@@ -4123,7 +4123,7 @@ mod tests {
         let rendered = render_lines(&cell.display_lines(/*width*/ 40)).join("\n");
 
         assert!(rendered.contains("codex router"));
-        assert!(!rendered.contains("____ ___  ____"));
+        assert!(!rendered.contains("_____          _"));
     }
 
     #[test]
