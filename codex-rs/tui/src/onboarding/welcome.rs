@@ -50,10 +50,14 @@ impl WidgetRef for &WelcomeWidget {
         let layout_area = self.layout_area.get().unwrap_or(area);
         let mut lines: Vec<Line> = crate::brand::codex_router_logo_lines(layout_area.width);
         lines.push("".into());
+        if layout_area.width as usize >= crate::brand::CODEX_ROUTER_LOGO_WIDTH {
+            lines.push(crate::brand::codex_router_context_line());
+            lines.push("".into());
+        }
         lines.push(Line::from(vec![
             "  ".into(),
             "Welcome to ".into(),
-            "codex router".bold(),
+            "Codex Router".bold(),
         ]));
 
         Paragraph::new(lines)
@@ -99,9 +103,11 @@ mod tests {
         let mut buf = Buffer::empty(area);
         (&widget).render(area, &mut buf);
 
-        let logo_row = row_containing(&buf, "####  ###  ####");
+        let logo_row = row_containing(&buf, "______          __");
+        let context_row = row_containing(&buf, "coder | ~/.codexrouter | isolated config");
         let welcome_row = row_containing(&buf, "Welcome");
         assert_eq!(logo_row, Some(0));
+        assert_eq!(context_row, Some(6));
         assert_eq!(welcome_row, Some(8));
     }
 

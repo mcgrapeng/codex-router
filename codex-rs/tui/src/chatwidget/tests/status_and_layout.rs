@@ -1077,7 +1077,8 @@ async fn ui_snapshot_empty_session_homepage_logo() {
         .expect("draw chat idle");
 
     let rendered = normalized_backend_snapshot(terminal.backend());
-    assert!(rendered.contains("####  ###  ####"));
+    assert!(rendered.contains("______          __"));
+    assert!(rendered.contains("coder | ~/.codexrouter | isolated config"));
     assert!(rendered.contains("Codex Router"));
 
     assert_chatwidget_snapshot!("chat_empty_session_homepage_logo", rendered);

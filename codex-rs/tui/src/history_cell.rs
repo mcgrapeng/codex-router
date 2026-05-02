@@ -1434,6 +1434,9 @@ impl HistoryCell for SessionHeaderHistoryCell {
         let dir_spans = vec![Span::from(dir_prefix).dim(), Span::from(dir)];
 
         let mut lines = crate::brand::codex_router_logo_lines(inner_width as u16);
+        if inner_width >= crate::brand::CODEX_ROUTER_LOGO_WIDTH {
+            lines.push(crate::brand::codex_router_context_line());
+        }
         lines.extend([
             make_row(title_spans),
             make_row(model_spans),
@@ -4104,7 +4107,8 @@ mod tests {
 
         let rendered = render_lines(&cell.display_lines(/*width*/ 80)).join("\n");
 
-        assert!(rendered.contains("####  ###  ####"));
+        assert!(rendered.contains("______          __"));
+        assert!(rendered.contains("coder | ~/.codexrouter | isolated config"));
         assert!(rendered.contains("Codex Router"));
     }
 
@@ -4121,7 +4125,8 @@ mod tests {
         let rendered = render_lines(&cell.display_lines(/*width*/ 40)).join("\n");
 
         assert!(rendered.contains("codex router"));
-        assert!(!rendered.contains("####  ###  ####"));
+        assert!(!rendered.contains("______          __"));
+        assert!(!rendered.contains("~/.codexrouter"));
     }
 
     #[test]

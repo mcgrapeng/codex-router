@@ -1,16 +1,14 @@
 use ratatui::style::Stylize;
 use ratatui::text::Line;
 
-pub(crate) const CODEX_ROUTER_LOGO_WIDTH: usize = 68;
+pub(crate) const CODEX_ROUTER_LOGO_WIDTH: usize = 66;
 
-const CODEX_ROUTER_LOGO: [&str; 7] = [
-    " ####  ###  ####  ##### #   #    ####   ###  #   # ##### ##### #### ",
-    "#     #   # #   # #      # #     #   # #   # #   #   #   #     #   #",
-    "#     #   # #   # #       #      #   # #   # #   #   #   #     #   #",
-    "#     #   # #   # ####    #      ####  #   # #   #   #   ####  #### ",
-    "#     #   # #   # #       #      # #   #   # #   #   #   #     # #  ",
-    "#     #   # #   # #      # #     #  #  #   # #   #   #   #     #  # ",
-    " ####  ###  ####  ##### #   #    #   #  ###   ###    #   ##### #   #",
+const CODEX_ROUTER_LOGO: [&str; 5] = [
+    "   ______          __              ____             __",
+    "  / ____/___  ____/ /__  _  __    / __ \\____  __  __/ /____  _____",
+    " / /   / __ \\/ __  / _ \\| |/_/   / /_/ / __ \\/ / / / __/ _ \\/ ___/",
+    "/ /___/ /_/ / /_/ /  __/>  <    / _, _/ /_/ / /_/ / /_/  __/ /",
+    "\\____/\\____/\\__,_/\\___/_/|_|   /_/ |_|\\____/\\__,_/\\__/\\___/_/",
 ];
 
 pub(crate) fn codex_router_logo_lines(width: u16) -> Vec<Line<'static>> {
@@ -22,6 +20,17 @@ pub(crate) fn codex_router_logo_lines(width: u16) -> Vec<Line<'static>> {
     } else {
         vec!["codex router".magenta().bold().into()]
     }
+}
+
+pub(crate) fn codex_router_context_line() -> Line<'static> {
+    vec![
+        "coder".cyan(),
+        " | ".dim(),
+        "~/.codexrouter".into(),
+        " | ".dim(),
+        "isolated config".green(),
+    ]
+    .into()
 }
 
 #[cfg(test)]
@@ -52,13 +61,11 @@ mod tests {
         assert_eq!(
             rendered,
             vec![
-                " ####  ###  ####  ##### #   #    ####   ###  #   # ##### ##### #### ",
-                "#     #   # #   # #      # #     #   # #   # #   #   #   #     #   #",
-                "#     #   # #   # #       #      #   # #   # #   #   #   #     #   #",
-                "#     #   # #   # ####    #      ####  #   # #   #   #   ####  #### ",
-                "#     #   # #   # #       #      # #   #   # #   #   #   #     # #  ",
-                "#     #   # #   # #      # #     #  #  #   # #   #   #   #     #  # ",
-                " ####  ###  ####  ##### #   #    #   #  ###   ###    #   ##### #   #",
+                "   ______          __              ____             __",
+                "  / ____/___  ____/ /__  _  __    / __ \\____  __  __/ /____  _____",
+                " / /   / __ \\/ __  / _ \\| |/_/   / /_/ / __ \\/ / / / __/ _ \\/ ___/",
+                "/ /___/ /_/ / /_/ /  __/>  <    / _, _/ /_/ / /_/ / /_/  __/ /",
+                "\\____/\\____/\\__,_/\\___/_/|_|   /_/ |_|\\____/\\__,_/\\__/\\___/_/",
             ]
         );
     }
@@ -69,6 +76,13 @@ mod tests {
         let rendered = lines_to_plain_text(&lines);
 
         assert_eq!(rendered, vec!["codex router"]);
+    }
+
+    #[test]
+    fn context_line_labels_command_home_and_isolation() {
+        let rendered = lines_to_plain_text(&[codex_router_context_line()]);
+
+        assert_eq!(rendered, vec!["coder | ~/.codexrouter | isolated config"]);
     }
 
     #[test]
