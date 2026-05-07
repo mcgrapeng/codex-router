@@ -9,6 +9,7 @@ use crate::FreeformToolFormat;
 use crate::JsonSchema;
 use crate::ResponsesApiNamespaceTool;
 use crate::ResponsesApiTool;
+use crate::create_qwen_tools_json_for_responses_api;
 use crate::create_tools_json_for_responses_api;
 use codex_protocol::config_types::WebSearchContextSize;
 use codex_protocol::config_types::WebSearchFilters as ConfigWebSearchFilters;
@@ -171,6 +172,104 @@ fn create_tools_json_for_responses_api_includes_top_level_name() {
                 },
             },
         })]
+    );
+}
+
+#[test]
+fn create_qwen_tools_json_bridges_non_function_tools_to_functions() {
+    let tools = vec![
+        ToolSpec::Freeform(FreeformTool {
+            name: "apply_patch".to_string(),
+            description: "Apply a patch".to_string(),
+            format: FreeformToolFormat {
+                r#type: "grammar".to_string(),
+                syntax: "lark".to_string(),
+                definition: "start: /.+/".to_string(),
+            },
+        }),
+        ToolSpec::LocalShell {},
+        ToolSpec::Namespace(ResponsesApiNamespace {
+            name: "mcp__demo__".to_string(),
+            description: "Demo tools".to_string(),
+            tools: vec![ResponsesApiNamespaceTool::Function(ResponsesApiTool {
+                name: "lookup_order".to_string(),
+                description: "Look up an order".to_string(),
+                strict: false,
+                defer_loading: None,
+                parameters: JsonSchema::object(
+                    BTreeMap::from([(
+                        "order_id".to_string(),
+                        JsonSchema::string(/*description*/ None),
+                    )]),
+                    Some(vec!["order_id".to_string()]),
+                    Some(false.into()),
+                ),
+                output_schema: None,
+            })],
+        }),
+    ];
+
+    assert_eq!(
+        create_qwen_tools_json_for_responses_api(&tools).expect("serialize qwen tools"),
+        vec![
+            json!({
+                "type": "function",
+                "name": "apply_patch",
+                "description": "Apply a patch\n\nThis tool accepts a raw string payload in the `input` field.",
+                "strict": false,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "input": {
+                            "type": "string",
+                            "description": "Raw input payload for the apply_patch tool.",
+                        },
+                    },
+                    "required": ["input"],
+                    "additionalProperties": false,
+                },
+            }),
+            json!({
+                "type": "function",
+                "name": "local_shell",
+                "description": "Run a local shell command.",
+                "strict": false,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "command": {
+                            "type": "array",
+                            "items": { "type": "string" },
+                            "description": "Command argv to execute.",
+                        },
+                        "timeout_ms": {
+                            "type": "number",
+                            "description": "Maximum command runtime in milliseconds.",
+                        },
+                        "workdir": {
+                            "type": "string",
+                            "description": "Working directory for the command.",
+                        },
+                    },
+                    "required": ["command"],
+                    "additionalProperties": false,
+                },
+            }),
+            json!({
+                "type": "function",
+                "name": "mcp__demo__lookup_order",
+                "description": "Demo tools\n\nLook up an order",
+                "strict": false,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "order_id": { "type": "string" },
+                    },
+                    "required": ["order_id"],
+                    "additionalProperties": false,
+                },
+            }),
+        ]
     );
 }
 

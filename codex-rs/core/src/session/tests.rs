@@ -2627,6 +2627,156 @@ async fn attach_thread_persistence(session: &mut Session) -> PathBuf {
         .expect("thread should have rollout path")
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum RecordingThreadStoreCall {
+    Append,
+    Shutdown,
+}
+
+#[derive(Default)]
+struct RecordingThreadStore {
+    calls: tokio::sync::Mutex<Vec<RecordingThreadStoreCall>>,
+}
+
+#[async_trait::async_trait]
+impl codex_thread_store::ThreadStore for RecordingThreadStore {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    async fn create_thread(
+        &self,
+        _params: codex_thread_store::CreateThreadParams,
+    ) -> codex_thread_store::ThreadStoreResult<()> {
+        Ok(())
+    }
+
+    async fn resume_thread(
+        &self,
+        _params: codex_thread_store::ResumeThreadParams,
+    ) -> codex_thread_store::ThreadStoreResult<()> {
+        Ok(())
+    }
+
+    async fn append_items(
+        &self,
+        _params: codex_thread_store::AppendThreadItemsParams,
+    ) -> codex_thread_store::ThreadStoreResult<()> {
+        self.calls
+            .lock()
+            .await
+            .push(RecordingThreadStoreCall::Append);
+        Ok(())
+    }
+
+    async fn persist_thread(
+        &self,
+        _thread_id: ThreadId,
+    ) -> codex_thread_store::ThreadStoreResult<()> {
+        Ok(())
+    }
+
+    async fn flush_thread(
+        &self,
+        _thread_id: ThreadId,
+    ) -> codex_thread_store::ThreadStoreResult<()> {
+        Ok(())
+    }
+
+    async fn shutdown_thread(
+        &self,
+        _thread_id: ThreadId,
+    ) -> codex_thread_store::ThreadStoreResult<()> {
+        self.calls
+            .lock()
+            .await
+            .push(RecordingThreadStoreCall::Shutdown);
+        Ok(())
+    }
+
+    async fn discard_thread(
+        &self,
+        _thread_id: ThreadId,
+    ) -> codex_thread_store::ThreadStoreResult<()> {
+        Ok(())
+    }
+
+    async fn load_history(
+        &self,
+        _params: codex_thread_store::LoadThreadHistoryParams,
+    ) -> codex_thread_store::ThreadStoreResult<codex_thread_store::StoredThreadHistory> {
+        unimplemented!("not used by shutdown ordering test")
+    }
+
+    async fn read_thread(
+        &self,
+        _params: codex_thread_store::ReadThreadParams,
+    ) -> codex_thread_store::ThreadStoreResult<codex_thread_store::StoredThread> {
+        unimplemented!("not used by shutdown ordering test")
+    }
+
+    async fn list_threads(
+        &self,
+        _params: codex_thread_store::ListThreadsParams,
+    ) -> codex_thread_store::ThreadStoreResult<codex_thread_store::ThreadPage> {
+        unimplemented!("not used by shutdown ordering test")
+    }
+
+    async fn update_thread_metadata(
+        &self,
+        _params: codex_thread_store::UpdateThreadMetadataParams,
+    ) -> codex_thread_store::ThreadStoreResult<codex_thread_store::StoredThread> {
+        unimplemented!("not used by shutdown ordering test")
+    }
+
+    async fn archive_thread(
+        &self,
+        _params: codex_thread_store::ArchiveThreadParams,
+    ) -> codex_thread_store::ThreadStoreResult<()> {
+        unimplemented!("not used by shutdown ordering test")
+    }
+
+    async fn unarchive_thread(
+        &self,
+        _params: codex_thread_store::ArchiveThreadParams,
+    ) -> codex_thread_store::ThreadStoreResult<codex_thread_store::StoredThread> {
+        unimplemented!("not used by shutdown ordering test")
+    }
+}
+
+#[tokio::test]
+async fn shutdown_records_final_event_before_closing_thread_persistence() {
+    let (mut session, _turn_context) = make_session_and_context().await;
+    let store = Arc::new(RecordingThreadStore::default());
+    session.services.thread_store = store.clone();
+    session.services.live_thread = Some(
+        LiveThread::create(
+            store.clone(),
+            CreateThreadParams {
+                thread_id: session.conversation_id,
+                forked_from_id: None,
+                source: SessionSource::Exec,
+                base_instructions: BaseInstructions::default(),
+                dynamic_tools: Vec::new(),
+                event_persistence_mode: ThreadEventPersistenceMode::Limited,
+            },
+        )
+        .await
+        .expect("create recording live thread"),
+    );
+    let session = Arc::new(session);
+
+    handlers::shutdown(&session, "shutdown-test".to_string()).await;
+
+    assert_eq!(
+        *store.calls.lock().await,
+        vec![
+            RecordingThreadStoreCall::Append,
+            RecordingThreadStoreCall::Shutdown
+        ]
+    );
+}
+
 fn text_block(s: &str) -> serde_json::Value {
     json!({
         "type": "text",
@@ -5354,6 +5504,7 @@ async fn handle_output_item_done_records_image_save_history_message() {
         turn_context: Arc::clone(&turn_context),
         tool_runtime: test_tool_runtime(Arc::clone(&session), Arc::clone(&turn_context)),
         cancellation_token: CancellationToken::new(),
+        qwen_tool_bridge: false,
     };
     handle_output_item_done(&mut ctx, item.clone(), /*previously_active_item*/ None)
         .await
@@ -5406,6 +5557,7 @@ async fn handle_output_item_done_skips_image_save_message_when_save_fails() {
         turn_context: Arc::clone(&turn_context),
         tool_runtime: test_tool_runtime(Arc::clone(&session), Arc::clone(&turn_context)),
         cancellation_token: CancellationToken::new(),
+        qwen_tool_bridge: false,
     };
     handle_output_item_done(&mut ctx, item.clone(), /*previously_active_item*/ None)
         .await
@@ -6558,6 +6710,7 @@ async fn tool_calls_reopen_mailbox_delivery_for_current_turn() {
         turn_context: Arc::clone(&tc),
         tool_runtime: test_tool_runtime(Arc::clone(&sess), Arc::clone(&tc)),
         cancellation_token: CancellationToken::new(),
+        qwen_tool_bridge: false,
     };
 
     let output = handle_output_item_done(&mut ctx, item, /*previously_active_item*/ None)
@@ -6683,10 +6836,14 @@ async fn fatal_tool_error_stops_turn_and_reports_error() {
         input: "{}".to_string(),
     };
 
-    let call = ToolRouter::build_tool_call(session.as_ref(), item.clone())
-        .await
-        .expect("build tool call")
-        .expect("tool call present");
+    let call = ToolRouter::build_tool_call(
+        session.as_ref(),
+        item.clone(),
+        /*qwen_tool_bridge*/ false,
+    )
+    .await
+    .expect("build tool call")
+    .expect("tool call present");
     let tracker = Arc::new(tokio::sync::Mutex::new(TurnDiffTracker::new()));
     let err = router
         .dispatch_tool_call_with_code_mode_result(

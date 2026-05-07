@@ -209,6 +209,7 @@ fn should_use_remote_compact_task_for_azure_provider() {
         websocket_connect_timeout_ms: None,
         requires_openai_auth: false,
         supports_websockets: false,
+        qwen_enable_thinking: None,
     };
 
     assert!(should_use_remote_compact_task(&provider));

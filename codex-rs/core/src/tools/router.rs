@@ -21,6 +21,7 @@ use codex_tools::ResponsesApiNamespaceTool;
 use codex_tools::ToolName;
 use codex_tools::ToolSpec;
 use codex_tools::ToolsConfig;
+use codex_tools::qwen_function_name_to_tool_name;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -173,6 +174,7 @@ impl ToolRouter {
     pub async fn build_tool_call(
         session: &Session,
         item: ResponseItem,
+        qwen_tool_bridge: bool,
     ) -> Result<Option<ToolCall>, FunctionCallError> {
         match item {
             ResponseItem::FunctionCall {
@@ -182,7 +184,11 @@ impl ToolRouter {
                 call_id,
                 ..
             } => {
-                let tool_name = ToolName::new(namespace, name);
+                let tool_name = if qwen_tool_bridge && namespace.is_none() {
+                    qwen_function_name_to_tool_name(&name)
+                } else {
+                    ToolName::new(namespace, name)
+                };
                 if let Some(tool_info) = session.resolve_mcp_tool_info(&tool_name).await {
                     Ok(Some(ToolCall {
                         tool_name: tool_info.canonical_tool_name(),
@@ -192,6 +198,36 @@ impl ToolRouter {
                             tool: tool_info.tool.name.to_string(),
                             raw_arguments: arguments,
                         },
+                    }))
+                } else if qwen_tool_bridge
+                    && tool_name.namespace.is_none()
+                    && tool_name.name == "local_shell"
+                {
+                    let params: ShellToolCallParams =
+                        serde_json::from_str(&arguments).map_err(|err| {
+                            FunctionCallError::RespondToModel(format!(
+                                "failed to parse local_shell arguments: {err}"
+                            ))
+                        })?;
+                    Ok(Some(ToolCall {
+                        tool_name,
+                        call_id,
+                        payload: ToolPayload::LocalShell { params },
+                    }))
+                } else if qwen_tool_bridge
+                    && tool_name.namespace.is_none()
+                    && tool_name.name == "tool_search"
+                {
+                    let arguments: SearchToolCallParams = serde_json::from_str(&arguments)
+                        .map_err(|err| {
+                            FunctionCallError::RespondToModel(format!(
+                                "failed to parse tool_search arguments: {err}"
+                            ))
+                        })?;
+                    Ok(Some(ToolCall {
+                        tool_name,
+                        call_id,
+                        payload: ToolPayload::ToolSearch { arguments },
                     }))
                 } else {
                     Ok(Some(ToolCall {

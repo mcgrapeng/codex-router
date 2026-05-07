@@ -2,7 +2,10 @@ use crate::FreeformTool;
 use crate::JsonSchema;
 use crate::LoadableToolSpec;
 use crate::ResponsesApiNamespace;
+use crate::ResponsesApiNamespaceTool;
 use crate::ResponsesApiTool;
+use crate::TOOL_SEARCH_TOOL_NAME;
+use crate::ToolName;
 use codex_protocol::config_types::WebSearchConfig;
 use codex_protocol::config_types::WebSearchContextSize;
 use codex_protocol::config_types::WebSearchFilters as ConfigWebSearchFilters;
@@ -12,6 +15,8 @@ use codex_protocol::config_types::WebSearchUserLocationType;
 use codex_protocol::openai_models::WebSearchToolType;
 use serde::Serialize;
 use serde_json::Value;
+use serde_json::json;
+use std::collections::BTreeMap;
 
 const WEB_SEARCH_TEXT_AND_IMAGE_CONTENT_TYPES: [&str; 2] = ["text", "image"];
 
@@ -161,6 +166,172 @@ pub fn create_tools_json_for_responses_api(
     }
 
     Ok(tools_json)
+}
+
+pub fn create_qwen_tools_json_for_responses_api(
+    tools: &[ToolSpec],
+) -> Result<Vec<Value>, serde_json::Error> {
+    let mut tools_json = Vec::new();
+
+    for tool in tools {
+        match tool {
+            ToolSpec::Function(tool) => {
+                tools_json.push(serde_json::to_value(tool_as_function(tool))?);
+            }
+            ToolSpec::Namespace(namespace) => {
+                for tool in &namespace.tools {
+                    match tool {
+                        ResponsesApiNamespaceTool::Function(tool) => {
+                            let mut tool = tool.clone();
+                            tool.name = qwen_namespaced_function_name(
+                                namespace.name.as_str(),
+                                tool.name.as_str(),
+                            );
+                            tool.description = format!(
+                                "{}\n\n{}",
+                                namespace.description.trim(),
+                                tool.description.trim()
+                            );
+                            tools_json.push(serde_json::to_value(tool_as_function(&tool))?);
+                        }
+                    }
+                }
+            }
+            ToolSpec::ToolSearch {
+                description,
+                parameters,
+                ..
+            } => {
+                let tool = ResponsesApiTool {
+                    name: TOOL_SEARCH_TOOL_NAME.to_string(),
+                    description: description.clone(),
+                    strict: false,
+                    defer_loading: None,
+                    parameters: parameters.clone(),
+                    output_schema: None,
+                };
+                tools_json.push(serde_json::to_value(tool_as_function(&tool))?);
+            }
+            ToolSpec::LocalShell {} => {
+                let properties = BTreeMap::from([
+                    (
+                        "command".to_string(),
+                        JsonSchema::array(
+                            JsonSchema::string(/*description*/ None),
+                            Some("Command argv to execute.".to_string()),
+                        ),
+                    ),
+                    (
+                        "timeout_ms".to_string(),
+                        JsonSchema::number(Some(
+                            "Maximum command runtime in milliseconds.".to_string(),
+                        )),
+                    ),
+                    (
+                        "workdir".to_string(),
+                        JsonSchema::string(Some("Working directory for the command.".to_string())),
+                    ),
+                ]);
+                let tool = ResponsesApiTool {
+                    name: "local_shell".to_string(),
+                    description: "Run a local shell command.".to_string(),
+                    strict: false,
+                    defer_loading: None,
+                    parameters: JsonSchema::object(
+                        properties,
+                        Some(vec!["command".to_string()]),
+                        Some(false.into()),
+                    ),
+                    output_schema: None,
+                };
+                tools_json.push(serde_json::to_value(tool_as_function(&tool))?);
+            }
+            ToolSpec::ImageGeneration { .. } | ToolSpec::WebSearch { .. } => {
+                tools_json.push(serde_json::to_value(tool)?);
+            }
+            ToolSpec::Freeform(tool) => {
+                let properties = BTreeMap::from([(
+                    "input".to_string(),
+                    JsonSchema::string(Some(format!(
+                        "Raw input payload for the {} tool.",
+                        tool.name
+                    ))),
+                )]);
+                let tool = ResponsesApiTool {
+                    name: tool.name.clone(),
+                    description: format!(
+                        "{}\n\nThis tool accepts a raw string payload in the `input` field.",
+                        tool.description
+                    ),
+                    strict: false,
+                    defer_loading: None,
+                    parameters: JsonSchema::object(
+                        properties,
+                        Some(vec!["input".to_string()]),
+                        Some(false.into()),
+                    ),
+                    output_schema: None,
+                };
+                tools_json.push(serde_json::to_value(tool_as_function(&tool))?);
+            }
+        }
+    }
+
+    Ok(tools_json)
+}
+
+pub fn qwen_function_name_to_tool_name(name: &str) -> ToolName {
+    if let Some((namespace, tool_name)) = split_qwen_flat_mcp_tool_name(name) {
+        return ToolName::namespaced(namespace, tool_name);
+    }
+
+    if let Some((namespace, tool_name)) = name.rsplit_once("__") {
+        return ToolName::namespaced(namespace, tool_name);
+    }
+
+    ToolName::plain(name)
+}
+
+fn split_qwen_flat_mcp_tool_name(name: &str) -> Option<(&str, &str)> {
+    let after_prefix = name.strip_prefix("mcp__")?;
+    let delimiter = after_prefix.find("__")? + "mcp__".len();
+    let server_namespace_end = delimiter + "__".len();
+    if !name.starts_with("mcp__codex_apps__") {
+        let namespace = &name[..server_namespace_end];
+        let tool_name = &name[server_namespace_end..];
+        return (!tool_name.is_empty()).then_some((namespace, tool_name));
+    }
+
+    let tool_name_start = name[server_namespace_end..]
+        .find('_')
+        .map(|index| server_namespace_end + index)?;
+    let namespace = &name[..tool_name_start];
+    let tool_name = &name[tool_name_start..];
+    (!tool_name.is_empty()).then_some((namespace, tool_name))
+}
+
+fn qwen_namespaced_function_name(namespace: &str, name: &str) -> String {
+    if namespace.starts_with("mcp__") || namespace.ends_with("__") {
+        format!("{namespace}{name}")
+    } else {
+        format!("{namespace}__{name}")
+    }
+}
+
+fn tool_as_function(tool: &ResponsesApiTool) -> Value {
+    let mut value = json!({
+        "type": "function",
+        "name": &tool.name,
+        "description": &tool.description,
+        "strict": tool.strict,
+        "parameters": &tool.parameters,
+    });
+    if let Some(defer_loading) = tool.defer_loading
+        && let Value::Object(map) = &mut value
+    {
+        map.insert("defer_loading".to_string(), Value::Bool(defer_loading));
+    }
+    value
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]

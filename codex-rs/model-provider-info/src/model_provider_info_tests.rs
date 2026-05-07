@@ -29,6 +29,7 @@ base_url = "http://localhost:11434/v1"
         websocket_connect_timeout_ms: None,
         requires_openai_auth: false,
         supports_websockets: false,
+        qwen_enable_thinking: None,
     };
 
     let provider: ModelProviderInfo = toml::from_str(azure_provider_toml).unwrap();
@@ -63,6 +64,7 @@ query_params = { api-version = "2025-04-01-preview" }
         websocket_connect_timeout_ms: None,
         requires_openai_auth: false,
         supports_websockets: false,
+        qwen_enable_thinking: None,
     };
 
     let provider: ModelProviderInfo = toml::from_str(azure_provider_toml).unwrap();
@@ -100,10 +102,46 @@ env_http_headers = { "X-Example-Env-Header" = "EXAMPLE_ENV_VAR" }
         websocket_connect_timeout_ms: None,
         requires_openai_auth: false,
         supports_websockets: false,
+        qwen_enable_thinking: None,
     };
 
     let provider: ModelProviderInfo = toml::from_str(azure_provider_toml).unwrap();
     assert_eq!(expected_provider, provider);
+}
+
+#[test]
+fn test_deserialize_qwen_model_provider_toml() {
+    let provider_toml = r#"
+name = "Qwen"
+base_url = "https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1"
+env_key = "DASHSCOPE_API_KEY"
+qwen_enable_thinking = true
+        "#;
+    let provider: ModelProviderInfo = toml::from_str(provider_toml).unwrap();
+
+    assert_eq!(
+        provider,
+        ModelProviderInfo {
+            name: QWEN_PROVIDER_NAME.to_string(),
+            base_url: Some(QWEN_DEFAULT_BASE_URL.to_string()),
+            env_key: Some("DASHSCOPE_API_KEY".to_string()),
+            env_key_instructions: None,
+            experimental_bearer_token: None,
+            auth: None,
+            aws: None,
+            wire_api: WireApi::Responses,
+            query_params: None,
+            http_headers: None,
+            env_http_headers: None,
+            request_max_retries: None,
+            stream_max_retries: None,
+            stream_idle_timeout_ms: None,
+            websocket_connect_timeout_ms: None,
+            requires_openai_auth: false,
+            supports_websockets: false,
+            qwen_enable_thinking: Some(true),
+        }
+    );
 }
 
 #[test]
@@ -159,6 +197,7 @@ fn test_supports_remote_compaction_for_azure_name() {
         websocket_connect_timeout_ms: None,
         requires_openai_auth: false,
         supports_websockets: false,
+        qwen_enable_thinking: None,
     };
 
     assert!(provider.supports_remote_compaction());
@@ -184,6 +223,7 @@ fn test_supports_remote_compaction_for_non_openai_non_azure_provider() {
         websocket_connect_timeout_ms: None,
         requires_openai_auth: false,
         supports_websockets: false,
+        qwen_enable_thinking: None,
     };
 
     assert!(!provider.supports_remote_compaction());
@@ -264,8 +304,44 @@ fn test_create_amazon_bedrock_provider() {
             websocket_connect_timeout_ms: None,
             requires_openai_auth: false,
             supports_websockets: false,
+            qwen_enable_thinking: None,
         }
     );
+}
+
+#[test]
+fn test_built_in_model_providers_include_qwen() {
+    let providers = built_in_model_providers(/*openai_base_url*/ None);
+    let provider = providers
+        .get(QWEN_PROVIDER_ID)
+        .expect("qwen provider should be built in");
+
+    assert_eq!(
+        provider,
+        &ModelProviderInfo {
+            name: QWEN_PROVIDER_NAME.to_string(),
+            base_url: Some(QWEN_DEFAULT_BASE_URL.to_string()),
+            env_key: Some("DASHSCOPE_API_KEY".to_string()),
+            env_key_instructions: Some(
+                "Set DASHSCOPE_API_KEY to your Alibaba Cloud DashScope API key.".to_string()
+            ),
+            experimental_bearer_token: None,
+            auth: None,
+            aws: None,
+            wire_api: WireApi::Responses,
+            query_params: None,
+            http_headers: None,
+            env_http_headers: None,
+            request_max_retries: None,
+            stream_max_retries: None,
+            stream_idle_timeout_ms: None,
+            websocket_connect_timeout_ms: None,
+            requires_openai_auth: false,
+            supports_websockets: false,
+            qwen_enable_thinking: None,
+        }
+    );
+    assert!(provider.is_qwen());
 }
 
 #[test]
@@ -334,6 +410,54 @@ fn test_merge_configured_model_providers_applies_amazon_bedrock_profile_override
 }
 
 #[test]
+fn test_merge_configured_model_providers_applies_qwen_thinking_override() {
+    let configured_model_providers = std::collections::HashMap::from([(
+        QWEN_PROVIDER_ID.to_string(),
+        ModelProviderInfo {
+            qwen_enable_thinking: Some(true),
+            ..ModelProviderInfo::default()
+        },
+    )]);
+
+    let mut expected = built_in_model_providers(/*openai_base_url*/ None);
+    expected
+        .get_mut(QWEN_PROVIDER_ID)
+        .expect("Qwen provider should be built in")
+        .qwen_enable_thinking = Some(true);
+
+    assert_eq!(
+        merge_configured_model_providers(
+            built_in_model_providers(/*openai_base_url*/ None),
+            configured_model_providers,
+        ),
+        Ok(expected)
+    );
+}
+
+#[test]
+fn test_merge_configured_model_providers_rejects_unsupported_qwen_overrides() {
+    let configured_model_providers = std::collections::HashMap::from([(
+        QWEN_PROVIDER_ID.to_string(),
+        ModelProviderInfo {
+            base_url: Some("https://qwen.example.com/v1".to_string()),
+            qwen_enable_thinking: Some(true),
+            ..ModelProviderInfo::default()
+        },
+    )]);
+
+    assert_eq!(
+        merge_configured_model_providers(
+            built_in_model_providers(/*openai_base_url*/ None),
+            configured_model_providers,
+        ),
+        Err(
+            "model_providers.qwen only supports changing `qwen_enable_thinking`; other non-default provider fields are not supported"
+                .to_string()
+        )
+    );
+}
+
+#[test]
 fn test_merge_configured_model_providers_rejects_amazon_bedrock_non_default_fields() {
     let configured_model_providers = std::collections::HashMap::from([(
         AMAZON_BEDROCK_PROVIDER_ID.to_string(),
@@ -391,6 +515,7 @@ fn test_validate_provider_aws_rejects_conflicting_auth() {
         }),
         env_key: Some("AWS_BEARER_TOKEN_BEDROCK".to_string()),
         supports_websockets: false,
+        qwen_enable_thinking: None,
         ..ModelProviderInfo::create_openai_provider(/*base_url*/ None)
     };
 
@@ -409,6 +534,7 @@ fn test_validate_provider_aws_rejects_websockets() {
         }),
         requires_openai_auth: false,
         supports_websockets: true,
+        qwen_enable_thinking: None,
         ..ModelProviderInfo::create_openai_provider(/*base_url*/ None)
     };
 

@@ -214,6 +214,7 @@ pub(crate) struct HandleOutputCtx {
     pub turn_context: Arc<TurnContext>,
     pub tool_runtime: ToolCallRuntime,
     pub cancellation_token: CancellationToken,
+    pub qwen_tool_bridge: bool,
 }
 
 #[instrument(level = "trace", skip_all)]
@@ -225,7 +226,7 @@ pub(crate) async fn handle_output_item_done(
     let mut output = OutputItemResult::default();
     let plan_mode = ctx.turn_context.collaboration_mode.mode == ModeKind::Plan;
 
-    match ToolRouter::build_tool_call(ctx.sess.as_ref(), item.clone()).await {
+    match ToolRouter::build_tool_call(ctx.sess.as_ref(), item.clone(), ctx.qwen_tool_bridge).await {
         // The model emitted a tool call; log it, persist the item immediately, and queue the tool execution.
         Ok(Some(call)) => {
             ctx.sess

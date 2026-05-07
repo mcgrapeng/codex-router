@@ -247,6 +247,7 @@ async fn build_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()
             arguments: "{}".to_string(),
             call_id: "call-namespace".to_string(),
         },
+        /*qwen_tool_bridge*/ false,
     )
     .await?
     .expect("function_call should produce a tool call");
@@ -261,6 +262,147 @@ async fn build_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()
             assert_eq!(arguments, "{}");
         }
         other => panic!("expected function payload, got {other:?}"),
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn build_tool_call_maps_qwen_flat_mcp_function_names() -> anyhow::Result<()> {
+    let (session, _) = make_session_and_context().await;
+    let session = Arc::new(session);
+
+    let call = ToolRouter::build_tool_call(
+        &session,
+        ResponseItem::FunctionCall {
+            id: None,
+            name: "mcp__codex_apps__calendar_create_event".to_string(),
+            namespace: None,
+            arguments: "{}".to_string(),
+            call_id: "call-qwen-flat-mcp".to_string(),
+        },
+        /*qwen_tool_bridge*/ true,
+    )
+    .await?
+    .expect("function_call should produce a tool call");
+
+    assert_eq!(
+        call.tool_name,
+        ToolName::namespaced("mcp__codex_apps__calendar", "_create_event")
+    );
+    assert_eq!(call.call_id, "call-qwen-flat-mcp");
+    match call.payload {
+        ToolPayload::Function { arguments } => {
+            assert_eq!(arguments, "{}");
+        }
+        other => panic!("expected function payload, got {other:?}"),
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn build_tool_call_maps_qwen_flat_non_app_mcp_function_names() -> anyhow::Result<()> {
+    let (session, _) = make_session_and_context().await;
+    let session = Arc::new(session);
+
+    let call = ToolRouter::build_tool_call(
+        &session,
+        ResponseItem::FunctionCall {
+            id: None,
+            name: "mcp__rmcp__echo".to_string(),
+            namespace: None,
+            arguments: "{}".to_string(),
+            call_id: "call-qwen-flat-mcp-server".to_string(),
+        },
+        /*qwen_tool_bridge*/ true,
+    )
+    .await?
+    .expect("function_call should produce a tool call");
+
+    assert_eq!(call.tool_name, ToolName::namespaced("mcp__rmcp__", "echo"));
+    assert_eq!(call.call_id, "call-qwen-flat-mcp-server");
+    match call.payload {
+        ToolPayload::Function { arguments } => {
+            assert_eq!(arguments, "{}");
+        }
+        other => panic!("expected function payload, got {other:?}"),
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn build_tool_call_maps_qwen_tool_search_function_to_tool_search_payload()
+-> anyhow::Result<()> {
+    let (session, _) = make_session_and_context().await;
+    let session = Arc::new(session);
+
+    let call = ToolRouter::build_tool_call(
+        &session,
+        ResponseItem::FunctionCall {
+            id: None,
+            name: "tool_search".to_string(),
+            namespace: None,
+            arguments: serde_json::json!({
+                "query": "calendar",
+                "limit": 2,
+            })
+            .to_string(),
+            call_id: "call-qwen-tool-search".to_string(),
+        },
+        /*qwen_tool_bridge*/ true,
+    )
+    .await?
+    .expect("function_call should produce a tool call");
+
+    assert_eq!(call.tool_name, ToolName::plain("tool_search"));
+    assert_eq!(call.call_id, "call-qwen-tool-search");
+    match call.payload {
+        ToolPayload::ToolSearch { arguments } => {
+            assert_eq!(arguments.query, "calendar");
+            assert_eq!(arguments.limit, Some(2));
+        }
+        other => panic!("expected tool_search payload, got {other:?}"),
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn build_tool_call_maps_qwen_local_shell_function_to_local_shell_payload()
+-> anyhow::Result<()> {
+    let (session, _) = make_session_and_context().await;
+    let session = Arc::new(session);
+
+    let call = ToolRouter::build_tool_call(
+        &session,
+        ResponseItem::FunctionCall {
+            id: None,
+            name: "local_shell".to_string(),
+            namespace: None,
+            arguments: serde_json::json!({
+                "command": ["pwd"],
+                "timeout_ms": 1_000,
+                "workdir": "/tmp",
+            })
+            .to_string(),
+            call_id: "call-qwen-local-shell".to_string(),
+        },
+        /*qwen_tool_bridge*/ true,
+    )
+    .await?
+    .expect("function_call should produce a tool call");
+
+    assert_eq!(call.tool_name, ToolName::plain("local_shell"));
+    assert_eq!(call.call_id, "call-qwen-local-shell");
+    match call.payload {
+        ToolPayload::LocalShell { params } => {
+            assert_eq!(params.command, vec!["pwd".to_string()]);
+            assert_eq!(params.timeout_ms, Some(1_000));
+            assert_eq!(params.workdir.as_deref(), Some("/tmp"));
+        }
+        other => panic!("expected local_shell payload, got {other:?}"),
     }
 
     Ok(())

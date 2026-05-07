@@ -30,6 +30,7 @@ fn serializes_text_verbosity_when_set() {
             format: None,
         }),
         client_metadata: None,
+        extra_body: None,
     };
 
     let v = serde_json::to_value(&req).expect("json");
@@ -74,6 +75,7 @@ fn serializes_text_schema_with_strict_format() {
         service_tier: None,
         text: Some(text_controls),
         client_metadata: None,
+        extra_body: None,
     };
 
     let v = serde_json::to_value(&req).expect("json");
@@ -135,6 +137,7 @@ fn omits_text_when_not_set() {
         service_tier: None,
         text: None,
         client_metadata: None,
+        extra_body: None,
     };
 
     let v = serde_json::to_value(&req).expect("json");
@@ -158,6 +161,7 @@ fn serializes_flex_service_tier_when_set() {
         service_tier: Some(ServiceTier::Flex.to_string()),
         text: None,
         client_metadata: None,
+        extra_body: None,
     };
 
     let v = serde_json::to_value(&req).expect("json");
@@ -165,6 +169,36 @@ fn serializes_flex_service_tier_when_set() {
         v.get("service_tier").and_then(|tier| tier.as_str()),
         Some("flex")
     );
+}
+
+#[test]
+fn serializes_provider_extra_body_at_top_level() {
+    let req = ResponsesApiRequest {
+        model: "qwen3.6-plus".to_string(),
+        instructions: "i".to_string(),
+        input: vec![],
+        tools: vec![],
+        tool_choice: "auto".to_string(),
+        parallel_tool_calls: true,
+        reasoning: None,
+        store: false,
+        stream: true,
+        include: vec![],
+        prompt_cache_key: None,
+        service_tier: None,
+        text: None,
+        client_metadata: None,
+        extra_body: Some(serde_json::json!({
+            "enable_thinking": true,
+        })),
+    };
+
+    let v = serde_json::to_value(&req).expect("json");
+    assert_eq!(
+        v.get("enable_thinking"),
+        Some(&serde_json::Value::Bool(true))
+    );
+    assert!(v.get("extra_body").is_none());
 }
 
 #[test]

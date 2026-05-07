@@ -1255,6 +1255,10 @@
           "description": "Optional query parameters to append to the base URL.",
           "type": "object"
         },
+        "qwen_enable_thinking": {
+          "description": "Optional DashScope/Qwen thinking-mode override for Responses requests.",
+          "type": "boolean"
+        },
         "request_max_retries": {
           "description": "Maximum number of times to retry a failed HTTP request to this provider.",
           "format": "uint64",

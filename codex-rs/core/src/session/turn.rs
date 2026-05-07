@@ -1984,6 +1984,7 @@ async fn try_run_sampling_request(
                     turn_context: turn_context.clone(),
                     tool_runtime: tool_runtime.clone(),
                     cancellation_token: cancellation_token.child_token(),
+                    qwen_tool_bridge: turn_context.config.model_provider.is_qwen(),
                 };
 
                 let preempt_for_mailbox_mail = match &item {
@@ -2029,12 +2030,13 @@ async fn try_run_sampling_request(
                 }
             }
             ResponseEvent::OutputItemAdded(item) => {
-                if let ResponseItem::CustomToolCall { call_id, name, .. } = &item {
-                    let tool_name = ToolName::plain(name.as_str());
+                if let Some((call_id, tool_name)) =
+                    tool_call_diff_consumer_key(&item, turn_context.config.model_provider.is_qwen())
+                {
                     active_tool_argument_diff_consumer = tool_runtime
                         .create_diff_consumer(&tool_name)
-                        .map(|consumer| (call_id.clone(), consumer));
-                } else if matches!(&item, ResponseItem::FunctionCall { .. }) {
+                        .map(|consumer| (call_id, consumer));
+                } else if is_tool_call_item(&item) {
                     active_tool_argument_diff_consumer = None;
                 }
                 if let Some(turn_item) = handle_non_tool_response_item(
@@ -2281,4 +2283,62 @@ pub(crate) fn get_last_assistant_message_from_turn(responses: &[ResponseItem]) -
         }
     }
     None
+}
+
+fn tool_call_diff_consumer_key(
+    item: &ResponseItem,
+    qwen_tool_bridge: bool,
+) -> Option<(String, ToolName)> {
+    match item {
+        ResponseItem::CustomToolCall { call_id, name, .. } => {
+            Some((call_id.clone(), ToolName::plain(name.as_str())))
+        }
+        ResponseItem::FunctionCall {
+            name,
+            namespace,
+            call_id,
+            ..
+        } if qwen_tool_bridge && namespace.is_none() => Some((
+            call_id.clone(),
+            codex_tools::qwen_function_name_to_tool_name(name),
+        )),
+        _ => None,
+    }
+}
+
+fn is_tool_call_item(item: &ResponseItem) -> bool {
+    matches!(
+        item,
+        ResponseItem::LocalShellCall { .. }
+            | ResponseItem::FunctionCall { .. }
+            | ResponseItem::ToolSearchCall { .. }
+            | ResponseItem::CustomToolCall { .. }
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::tool_call_diff_consumer_key;
+    use codex_protocol::models::ResponseItem;
+    use codex_tools::ToolName;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn qwen_function_call_apply_patch_uses_diff_consumer_tool_name() {
+        let item = ResponseItem::FunctionCall {
+            id: None,
+            name: "apply_patch".to_string(),
+            namespace: None,
+            arguments: String::new(),
+            call_id: "call-qwen-apply-patch".to_string(),
+        };
+
+        assert_eq!(
+            tool_call_diff_consumer_key(&item, /*qwen_tool_bridge*/ true),
+            Some((
+                "call-qwen-apply-patch".to_string(),
+                ToolName::plain("apply_patch")
+            ))
+        );
+    }
 }

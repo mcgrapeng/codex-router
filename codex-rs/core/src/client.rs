@@ -83,6 +83,7 @@ use codex_protocol::protocol::W3cTraceContext;
 use codex_rollout_trace::CompactionTraceContext;
 use codex_rollout_trace::InferenceTraceAttempt;
 use codex_rollout_trace::InferenceTraceContext;
+use codex_tools::create_qwen_tools_json_for_responses_api;
 use codex_tools::create_tools_json_for_responses_api;
 use eventsource_stream::Event;
 use eventsource_stream::EventStreamError;
@@ -431,13 +432,17 @@ impl ModelClient {
             RequestRouteTelemetry::for_endpoint(RESPONSES_COMPACT_ENDPOINT),
             self.state.auth_env_telemetry.clone(),
         );
+        let instructions = prompt.base_instructions.text.clone();
+        let input = prompt.get_formatted_input();
+        let tools = if client_setup.api_provider.is_qwen() {
+            create_qwen_tools_json_for_responses_api(&prompt.tools)?
+        } else {
+            create_tools_json_for_responses_api(&prompt.tools)?
+        };
         let client =
             ApiCompactClient::new(transport, client_setup.api_provider, client_setup.api_auth)
                 .with_telemetry(Some(request_telemetry));
 
-        let instructions = prompt.base_instructions.text.clone();
-        let input = prompt.get_formatted_input();
-        let tools = create_tools_json_for_responses_api(&prompt.tools)?;
         let reasoning = Self::build_reasoning(model_info, effort, summary);
         let verbosity = if model_info.support_verbosity {
             self.state.model_verbosity.or(model_info.default_verbosity)
@@ -837,7 +842,11 @@ impl ModelClientSession {
     ) -> Result<ResponsesApiRequest> {
         let instructions = &prompt.base_instructions.text;
         let input = prompt.get_formatted_input();
-        let tools = create_tools_json_for_responses_api(&prompt.tools)?;
+        let tools = if provider.is_qwen() {
+            create_qwen_tools_json_for_responses_api(&prompt.tools)?
+        } else {
+            create_tools_json_for_responses_api(&prompt.tools)?
+        };
         let default_reasoning_effort = model_info.default_reasoning_level;
         let reasoning = if model_info.supports_reasoning_summaries {
             Some(Reasoning {
@@ -898,6 +907,11 @@ impl ModelClientSession {
                 X_CODEX_INSTALLATION_ID_HEADER.to_string(),
                 self.client.state.installation_id.clone(),
             )])),
+            extra_body: if provider.is_qwen() {
+                qwen_extra_body(self.client.state.provider.info())
+            } else {
+                None
+            },
         };
         Ok(request)
     }
@@ -1619,6 +1633,12 @@ fn parent_thread_id_header_value(session_source: &SessionSource) -> Option<Strin
         | SessionSource::SubAgent(_)
         | SessionSource::Unknown => None,
     }
+}
+
+fn qwen_extra_body(provider_info: &ModelProviderInfo) -> Option<serde_json::Value> {
+    provider_info
+        .qwen_enable_thinking
+        .map(|enable_thinking| serde_json::json!({ "enable_thinking": enable_thinking }))
 }
 
 fn map_response_stream<S>(

@@ -68,6 +68,8 @@ use codex_protocol::protocol::SandboxPolicy;
 use serde::Deserialize;
 use tempfile::tempdir;
 
+const TEST_PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 use super::*;
 use core_test_support::PathBufExt;
 use core_test_support::PathExt;
@@ -461,6 +463,33 @@ region = "us-west-2"
 }
 
 #[tokio::test]
+async fn load_config_applies_qwen_thinking_override() {
+    let cfg = toml::from_str::<ConfigToml>(
+        r#"
+model_provider = "qwen"
+
+[model_providers.qwen]
+qwen_enable_thinking = true
+"#,
+    )
+    .expect("Qwen thinking override should deserialize");
+
+    let config = Config::load_from_base_config_with_overrides(
+        cfg,
+        ConfigOverrides {
+            model: Some("qwen3.6-plus".to_string()),
+            ..ConfigOverrides::default()
+        },
+        tempdir().expect("tempdir").abs(),
+    )
+    .await
+    .expect("load config");
+
+    assert_eq!(config.model_provider_id, "qwen");
+    assert_eq!(config.model_provider.qwen_enable_thinking, Some(true));
+}
+
+#[tokio::test]
 async fn load_config_rejects_unsupported_amazon_bedrock_overrides() {
     let cfg = toml::from_str::<ConfigToml>(
         r#"
@@ -490,6 +519,36 @@ region = "us-west-2"
     assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
     assert!(err.to_string().contains(
         "model_providers.amazon-bedrock only supports changing `aws.profile` and `aws.region`; other non-default provider fields are not supported"
+    ));
+}
+
+#[tokio::test]
+async fn load_config_rejects_unsupported_qwen_overrides() {
+    let cfg = toml::from_str::<ConfigToml>(
+        r#"
+model_provider = "qwen"
+
+[model_providers.qwen]
+base_url = "https://qwen.example.com/v1"
+qwen_enable_thinking = true
+"#,
+    )
+    .expect("Qwen unsupported overrides should deserialize");
+
+    let err = Config::load_from_base_config_with_overrides(
+        cfg,
+        ConfigOverrides {
+            model: Some("qwen3.6-plus".to_string()),
+            ..ConfigOverrides::default()
+        },
+        tempdir().expect("tempdir").abs(),
+    )
+    .await
+    .unwrap_err();
+
+    assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
+    assert!(err.to_string().contains(
+        "model_providers.qwen only supports changing `qwen_enable_thinking`; other non-default provider fields are not supported"
     ));
 }
 
@@ -5140,6 +5199,7 @@ model_verbosity = "high"
         websocket_connect_timeout_ms: Some(15_000),
         requires_openai_auth: false,
         supports_websockets: false,
+        qwen_enable_thinking: None,
     };
     let model_provider_map = {
         let mut model_provider_map =
@@ -5221,7 +5281,7 @@ async fn test_precedence_fixture_with_o3_profile() -> std::io::Result<()> {
             mcp_servers: Constrained::allow_any(HashMap::new()),
             mcp_oauth_credentials_store_mode: resolve_mcp_oauth_credentials_store_mode(
                 Default::default(),
-                LOCAL_DEV_BUILD_VERSION,
+                TEST_PACKAGE_VERSION,
             ),
             mcp_oauth_callback_port: None,
             mcp_oauth_callback_url: None,
@@ -5418,7 +5478,7 @@ async fn test_precedence_fixture_with_gpt3_profile() -> std::io::Result<()> {
         mcp_servers: Constrained::allow_any(HashMap::new()),
         mcp_oauth_credentials_store_mode: resolve_mcp_oauth_credentials_store_mode(
             Default::default(),
-            LOCAL_DEV_BUILD_VERSION,
+            TEST_PACKAGE_VERSION,
         ),
         mcp_oauth_callback_port: None,
         mcp_oauth_callback_url: None,
@@ -5569,7 +5629,7 @@ async fn test_precedence_fixture_with_zdr_profile() -> std::io::Result<()> {
         mcp_servers: Constrained::allow_any(HashMap::new()),
         mcp_oauth_credentials_store_mode: resolve_mcp_oauth_credentials_store_mode(
             Default::default(),
-            LOCAL_DEV_BUILD_VERSION,
+            TEST_PACKAGE_VERSION,
         ),
         mcp_oauth_callback_port: None,
         mcp_oauth_callback_url: None,
@@ -5705,7 +5765,7 @@ async fn test_precedence_fixture_with_gpt5_profile() -> std::io::Result<()> {
         mcp_servers: Constrained::allow_any(HashMap::new()),
         mcp_oauth_credentials_store_mode: resolve_mcp_oauth_credentials_store_mode(
             Default::default(),
-            LOCAL_DEV_BUILD_VERSION,
+            TEST_PACKAGE_VERSION,
         ),
         mcp_oauth_callback_port: None,
         mcp_oauth_callback_url: None,

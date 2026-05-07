@@ -1,5 +1,7 @@
 use codex_protocol::config_types::ReasoningSummary;
+use codex_protocol::openai_models::ApplyPatchToolType;
 use codex_protocol::openai_models::ConfigShellToolType;
+use codex_protocol::openai_models::InputModality;
 use codex_protocol::openai_models::ModelInfo;
 use codex_protocol::openai_models::ModelInstructionsVariables;
 use codex_protocol::openai_models::ModelMessages;
@@ -64,6 +66,10 @@ pub fn with_config_overrides(mut model: ModelInfo, config: &ModelsManagerConfig)
 
 /// Build a minimal fallback model descriptor for missing/unknown slugs.
 pub fn model_info_from_slug(slug: &str) -> ModelInfo {
+    if slug == "qwen3.6-plus" {
+        return qwen_model_info(slug);
+    }
+
     warn!("Unknown model {slug} is used. This will use fallback model metadata.");
     ModelInfo {
         slug: slug.to_string(),
@@ -97,6 +103,44 @@ pub fn model_info_from_slug(slug: &str) -> ModelInfo {
         input_modalities: default_input_modalities(),
         used_fallback_model_metadata: true, // this is the fallback model metadata
         supports_search_tool: false,
+    }
+}
+
+fn qwen_model_info(slug: &str) -> ModelInfo {
+    ModelInfo {
+        slug: slug.to_string(),
+        display_name: "Qwen 3.6 Plus".to_string(),
+        description: Some(
+            "DashScope Qwen model used through the Responses-compatible endpoint.".to_string(),
+        ),
+        default_reasoning_level: None,
+        supported_reasoning_levels: Vec::new(),
+        shell_type: ConfigShellToolType::ShellCommand,
+        visibility: ModelVisibility::List,
+        supported_in_api: true,
+        priority: 90,
+        additional_speed_tiers: Vec::new(),
+        availability_nux: None,
+        upgrade: None,
+        base_instructions: BASE_INSTRUCTIONS.to_string(),
+        model_messages: local_personality_messages_for_slug(slug),
+        supports_reasoning_summaries: false,
+        default_reasoning_summary: ReasoningSummary::Auto,
+        support_verbosity: false,
+        default_verbosity: None,
+        apply_patch_tool_type: Some(ApplyPatchToolType::Freeform),
+        web_search_tool_type: WebSearchToolType::Text,
+        truncation_policy: TruncationPolicyConfig::bytes(/*limit*/ 10_000),
+        supports_parallel_tool_calls: true,
+        supports_image_detail_original: false,
+        context_window: Some(262_144),
+        max_context_window: Some(262_144),
+        auto_compact_token_limit: None,
+        effective_context_window_percent: 95,
+        experimental_supported_tools: Vec::new(),
+        input_modalities: vec![InputModality::Text, InputModality::Image],
+        used_fallback_model_metadata: false,
+        supports_search_tool: true,
     }
 }
 

@@ -89,6 +89,10 @@ impl Provider {
         is_azure_responses_provider(&self.name, Some(&self.base_url))
     }
 
+    pub fn is_qwen(&self) -> bool {
+        self.name == "Qwen" || self.base_url.contains("dashscope.aliyuncs.com")
+    }
+
     pub fn websocket_url_for_path(&self, path: &str) -> Result<Url, url::ParseError> {
         let mut url = Url::parse(&self.url_for_path(path))?;
 

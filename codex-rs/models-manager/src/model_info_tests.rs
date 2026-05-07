@@ -1,5 +1,7 @@
 use super::*;
 use crate::ModelsManagerConfig;
+use codex_protocol::openai_models::ApplyPatchToolType;
+use codex_protocol::openai_models::ConfigShellToolType;
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -15,6 +17,20 @@ fn reasoning_summaries_override_true_enables_support() {
     expected.supports_reasoning_summaries = true;
 
     assert_eq!(updated, expected);
+}
+
+#[test]
+fn qwen_model_info_uses_agent_tool_metadata_without_fallback() {
+    let qwen = model_info_from_slug("qwen3.6-plus");
+
+    assert_eq!(qwen.shell_type, ConfigShellToolType::ShellCommand);
+    assert_eq!(
+        qwen.apply_patch_tool_type,
+        Some(ApplyPatchToolType::Freeform)
+    );
+    assert!(qwen.supports_parallel_tool_calls);
+    assert!(qwen.supports_search_tool);
+    assert!(!qwen.used_fallback_model_metadata);
 }
 
 #[test]

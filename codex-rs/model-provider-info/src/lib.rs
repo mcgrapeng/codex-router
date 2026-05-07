@@ -37,6 +37,10 @@ pub const OPENAI_PROVIDER_ID: &str = "openai";
 const AMAZON_BEDROCK_PROVIDER_NAME: &str = "Amazon Bedrock";
 pub const AMAZON_BEDROCK_PROVIDER_ID: &str = "amazon-bedrock";
 pub const AMAZON_BEDROCK_DEFAULT_BASE_URL: &str = "https://bedrock-mantle.us-east-1.api.aws/v1";
+pub const QWEN_PROVIDER_NAME: &str = "Qwen";
+pub const QWEN_PROVIDER_ID: &str = "qwen";
+pub const QWEN_DEFAULT_BASE_URL: &str =
+    "https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1";
 const CHAT_WIRE_API_REMOVED_ERROR: &str = "`wire_api = \"chat\"` is no longer supported.\nHow to fix: set `wire_api = \"responses\"` in your provider config.\nMore info: https://github.com/openai/codex/discussions/7782";
 pub const LEGACY_OLLAMA_CHAT_PROVIDER_ID: &str = "ollama-chat";
 pub const OLLAMA_CHAT_PROVIDER_REMOVED_ERROR: &str = "`ollama-chat` is no longer supported.\nHow to fix: replace `ollama-chat` with `ollama` in `model_provider`, `oss_provider`, or `--local-provider`.\nMore info: https://github.com/openai/codex/discussions/7782";
@@ -128,6 +132,9 @@ pub struct ModelProviderInfo {
     /// Whether this provider supports the Responses API WebSocket transport.
     #[serde(default)]
     pub supports_websockets: bool,
+    /// Optional DashScope/Qwen thinking-mode override for Responses requests.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub qwen_enable_thinking: Option<bool>,
 }
 
 /// AWS SigV4 auth configuration for a model provider.
@@ -344,6 +351,7 @@ impl ModelProviderInfo {
             websocket_connect_timeout_ms: None,
             requires_openai_auth: true,
             supports_websockets: true,
+            qwen_enable_thinking: None,
         }
     }
 
@@ -371,6 +379,32 @@ impl ModelProviderInfo {
             websocket_connect_timeout_ms: None,
             requires_openai_auth: false,
             supports_websockets: false,
+            qwen_enable_thinking: None,
+        }
+    }
+
+    pub fn create_qwen_provider() -> ModelProviderInfo {
+        ModelProviderInfo {
+            name: QWEN_PROVIDER_NAME.into(),
+            base_url: Some(QWEN_DEFAULT_BASE_URL.into()),
+            env_key: Some("DASHSCOPE_API_KEY".into()),
+            env_key_instructions: Some(
+                "Set DASHSCOPE_API_KEY to your Alibaba Cloud DashScope API key.".into(),
+            ),
+            experimental_bearer_token: None,
+            auth: None,
+            aws: None,
+            wire_api: WireApi::Responses,
+            query_params: None,
+            http_headers: None,
+            env_http_headers: None,
+            request_max_retries: None,
+            stream_max_retries: None,
+            stream_idle_timeout_ms: None,
+            websocket_connect_timeout_ms: None,
+            requires_openai_auth: false,
+            supports_websockets: false,
+            qwen_enable_thinking: None,
         }
     }
 
@@ -380,6 +414,14 @@ impl ModelProviderInfo {
 
     pub fn is_amazon_bedrock(&self) -> bool {
         self.name == AMAZON_BEDROCK_PROVIDER_NAME
+    }
+
+    pub fn is_qwen(&self) -> bool {
+        self.name == QWEN_PROVIDER_NAME
+            || self
+                .base_url
+                .as_deref()
+                .is_some_and(|base_url| base_url.contains("dashscope.aliyuncs.com"))
     }
 
     pub fn supports_remote_compaction(&self) -> bool {
@@ -404,14 +446,14 @@ pub fn built_in_model_providers(
     use ModelProviderInfo as P;
     let openai_provider = P::create_openai_provider(openai_base_url);
     let amazon_bedrock_provider = P::create_amazon_bedrock_provider(/*aws*/ None);
+    let qwen_provider = P::create_qwen_provider();
 
-    // We do not want to be in the business of adjucating which third-party
-    // providers are bundled with Codex Router CLI, so we only include the OpenAI and
-    // open source ("oss") providers by default. Users are encouraged to add to
-    // `model_providers` in config.toml to add their own providers.
+    // Keep the built-in list intentionally small. Users are encouraged to add
+    // additional providers in config.toml.
     [
         (OPENAI_PROVIDER_ID, openai_provider),
         (AMAZON_BEDROCK_PROVIDER_ID, amazon_bedrock_provider),
+        (QWEN_PROVIDER_ID, qwen_provider),
         (
             OLLAMA_OSS_PROVIDER_ID,
             create_oss_provider(DEFAULT_OLLAMA_PORT, WireApi::Responses),
@@ -429,8 +471,9 @@ pub fn built_in_model_providers(
 /// Merge configured providers into the built-in provider catalog.
 ///
 /// Configured providers extend the built-in set. Built-in providers are not
-/// generally overridable, but the built-in Amazon Bedrock provider allows the
-/// user to set `aws.profile` and `aws.region`.
+/// generally overridable. The built-in Amazon Bedrock provider allows the user
+/// to set `aws.profile` and `aws.region`; the built-in Qwen provider allows the
+/// user to set `qwen_enable_thinking`.
 pub fn merge_configured_model_providers(
     mut model_providers: HashMap<String, ModelProviderInfo>,
     configured_model_providers: HashMap<String, ModelProviderInfo>,
@@ -455,6 +498,20 @@ pub fn merge_configured_model_providers(
                 if let Some(region) = aws_override.region {
                     built_in_aws.region = Some(region);
                 }
+            }
+        } else if key == QWEN_PROVIDER_ID {
+            let qwen_enable_thinking = provider.qwen_enable_thinking.take();
+            if provider != ModelProviderInfo::default() {
+                return Err(format!(
+                    "model_providers.{QWEN_PROVIDER_ID} only supports changing \
+`qwen_enable_thinking`; other non-default provider fields are not supported"
+                ));
+            }
+
+            if let Some(qwen_enable_thinking) = qwen_enable_thinking
+                && let Some(built_in_provider) = model_providers.get_mut(QWEN_PROVIDER_ID)
+            {
+                built_in_provider.qwen_enable_thinking = Some(qwen_enable_thinking);
             }
         } else {
             model_providers.entry(key).or_insert(provider);
@@ -502,6 +559,7 @@ pub fn create_oss_provider_with_base_url(base_url: &str, wire_api: WireApi) -> M
         websocket_connect_timeout_ms: None,
         requires_openai_auth: false,
         supports_websockets: false,
+        qwen_enable_thinking: None,
     }
 }
 

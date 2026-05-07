@@ -10,6 +10,8 @@ use codex_protocol::protocol::W3cTraceContext;
 use futures::Stream;
 use serde::Deserialize;
 use serde::Serialize;
+use serde::ser::SerializeMap;
+use serde::ser::Serializer;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::pin::Pin;
@@ -159,10 +161,9 @@ impl From<VerbosityConfig> for OpenAiVerbosity {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ResponsesApiRequest {
     pub model: String,
-    #[serde(skip_serializing_if = "String::is_empty")]
     pub instructions: String,
     pub input: Vec<ResponseItem>,
     pub tools: Vec<serde_json::Value>,
@@ -172,14 +173,68 @@ pub struct ResponsesApiRequest {
     pub store: bool,
     pub stream: bool,
     pub include: Vec<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub service_tier: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub prompt_cache_key: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<TextControls>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub client_metadata: Option<HashMap<String, String>>,
+    pub extra_body: Option<Value>,
+}
+
+impl Serialize for ResponsesApiRequest {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let extra_body = match &self.extra_body {
+            Some(Value::Object(map)) => Some(map),
+            Some(_) => {
+                return Err(serde::ser::Error::custom(
+                    "ResponsesApiRequest extra_body must be a JSON object",
+                ));
+            }
+            None => None,
+        };
+
+        let mut len = 9;
+        len += usize::from(!self.instructions.is_empty());
+        len += usize::from(self.service_tier.is_some());
+        len += usize::from(self.prompt_cache_key.is_some());
+        len += usize::from(self.text.is_some());
+        len += usize::from(self.client_metadata.is_some());
+        len += extra_body.map_or(0, serde_json::Map::len);
+
+        let mut map = serializer.serialize_map(Some(len))?;
+        map.serialize_entry("model", &self.model)?;
+        if !self.instructions.is_empty() {
+            map.serialize_entry("instructions", &self.instructions)?;
+        }
+        map.serialize_entry("input", &self.input)?;
+        map.serialize_entry("tools", &self.tools)?;
+        map.serialize_entry("tool_choice", &self.tool_choice)?;
+        map.serialize_entry("parallel_tool_calls", &self.parallel_tool_calls)?;
+        map.serialize_entry("reasoning", &self.reasoning)?;
+        map.serialize_entry("store", &self.store)?;
+        map.serialize_entry("stream", &self.stream)?;
+        map.serialize_entry("include", &self.include)?;
+        if let Some(service_tier) = &self.service_tier {
+            map.serialize_entry("service_tier", service_tier)?;
+        }
+        if let Some(prompt_cache_key) = &self.prompt_cache_key {
+            map.serialize_entry("prompt_cache_key", prompt_cache_key)?;
+        }
+        if let Some(text) = &self.text {
+            map.serialize_entry("text", text)?;
+        }
+        if let Some(client_metadata) = &self.client_metadata {
+            map.serialize_entry("client_metadata", client_metadata)?;
+        }
+        if let Some(extra_body) = extra_body {
+            for (key, value) in extra_body {
+                map.serialize_entry(key, value)?;
+            }
+        }
+        map.end()
+    }
 }
 
 impl From<&ResponsesApiRequest> for ResponseCreateWsRequest {

@@ -9,18 +9,40 @@ use super::X_CODEX_WINDOW_ID_HEADER;
 use super::X_OPENAI_SUBAGENT_HEADER;
 use codex_app_server_protocol::AuthMode;
 use codex_model_provider::BearerAuthProvider;
+use codex_model_provider_info::ModelProviderInfo;
 use codex_model_provider_info::WireApi;
 use codex_model_provider_info::create_oss_provider_with_base_url;
 use codex_otel::SessionTelemetry;
 use codex_protocol::ThreadId;
+use codex_protocol::models::BaseInstructions;
 use codex_protocol::openai_models::ModelInfo;
 use codex_protocol::protocol::SessionSource;
 use codex_protocol::protocol::SubAgentSource;
+use codex_tools::FreeformTool;
+use codex_tools::FreeformToolFormat;
+use codex_tools::ToolSpec;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
 fn test_model_client(session_source: SessionSource) -> ModelClient {
     let provider = create_oss_provider_with_base_url("https://example.com/v1", WireApi::Responses);
+    ModelClient::new(
+        /*auth_manager*/ None,
+        ThreadId::new(),
+        /*installation_id*/ "11111111-1111-4111-8111-111111111111".to_string(),
+        provider,
+        session_source,
+        /*model_verbosity*/ None,
+        /*enable_request_compression*/ false,
+        /*include_timing_metrics*/ false,
+        /*beta_features_header*/ None,
+    )
+}
+
+fn test_model_client_with_provider(
+    session_source: SessionSource,
+    provider: ModelProviderInfo,
+) -> ModelClient {
     ModelClient::new(
         /*auth_manager*/ None,
         ThreadId::new(),
@@ -77,6 +99,65 @@ fn test_session_telemetry() -> SessionTelemetry {
         "test-terminal".to_string(),
         SessionSource::Cli,
     )
+}
+
+#[test]
+fn qwen_responses_request_uses_qwen_tool_bridge_and_optional_extra_body() {
+    let mut provider = ModelProviderInfo::create_qwen_provider();
+    provider.qwen_enable_thinking = Some(true);
+    let client = test_model_client_with_provider(SessionSource::Cli, provider);
+    let session = client.new_session();
+    let model_info = codex_models_manager::model_info::model_info_from_slug("qwen3.6-plus");
+    let prompt = crate::client_common::Prompt {
+        tools: vec![ToolSpec::Freeform(FreeformTool {
+            name: "apply_patch".to_string(),
+            description: "Apply a patch".to_string(),
+            format: FreeformToolFormat {
+                r#type: "grammar".to_string(),
+                syntax: "lark".to_string(),
+                definition: "start: /.+/".to_string(),
+            },
+        })],
+        base_instructions: BaseInstructions {
+            text: "instructions".to_string(),
+        },
+        ..Default::default()
+    };
+    let api_provider = client.state.provider.info().to_api_provider(None).unwrap();
+
+    let request = session
+        .build_responses_request(
+            &api_provider,
+            &prompt,
+            &model_info,
+            /*effort*/ None,
+            codex_protocol::config_types::ReasoningSummary::None,
+            /*service_tier*/ None,
+        )
+        .expect("build qwen request");
+    let body = serde_json::to_value(&request).expect("serialize request");
+
+    assert_eq!(body.get("enable_thinking"), Some(&json!(true)));
+    assert_eq!(
+        body["tools"][0],
+        json!({
+            "type": "function",
+            "name": "apply_patch",
+            "description": "Apply a patch\n\nThis tool accepts a raw string payload in the `input` field.",
+            "strict": false,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "input": {
+                        "type": "string",
+                        "description": "Raw input payload for the apply_patch tool.",
+                    },
+                },
+                "required": ["input"],
+                "additionalProperties": false,
+            },
+        })
+    );
 }
 
 #[test]

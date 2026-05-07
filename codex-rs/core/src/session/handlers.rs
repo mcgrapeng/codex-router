@@ -958,6 +958,12 @@ pub async fn shutdown(sess: &Arc<Session>, sub_id: String) -> bool {
         &[],
     );
 
+    let event = Event {
+        id: sub_id.clone(),
+        msg: EventMsg::ShutdownComplete,
+    };
+    sess.send_event_raw(event).await;
+
     // Gracefully flush and shutdown thread persistence on session end so tests
     // that inspect durable state do not race with the background writer.
     if let Some(live_thread) = sess.live_thread()
@@ -965,20 +971,14 @@ pub async fn shutdown(sess: &Arc<Session>, sub_id: String) -> bool {
     {
         warn!("failed to shutdown thread persistence: {e}");
         let event = Event {
-            id: sub_id.clone(),
+            id: sub_id,
             msg: EventMsg::Error(ErrorEvent {
                 message: "Failed to shutdown thread persistence".to_string(),
                 codex_error_info: Some(CodexErrorInfo::Other),
             }),
         };
-        sess.send_event_raw(event).await;
+        sess.deliver_event_raw(event).await;
     }
-
-    let event = Event {
-        id: sub_id,
-        msg: EventMsg::ShutdownComplete,
-    };
-    sess.send_event_raw(event).await;
     sess.services
         .rollout_thread_trace
         .record_ended(codex_rollout_trace::RolloutStatus::Completed);
