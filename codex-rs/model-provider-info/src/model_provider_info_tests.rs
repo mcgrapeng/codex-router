@@ -113,7 +113,7 @@ env_http_headers = { "X-Example-Env-Header" = "EXAMPLE_ENV_VAR" }
 fn test_deserialize_qwen_model_provider_toml() {
     let provider_toml = r#"
 name = "Qwen"
-base_url = "https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1"
+base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 env_key = "DASHSCOPE_API_KEY"
 qwen_enable_thinking = true
         "#;
