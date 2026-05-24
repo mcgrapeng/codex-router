@@ -42,7 +42,15 @@ coder -m qwen3.6-plus -c model_provider=qwen
 https://dashscope.aliyuncs.com/compatible-mode/v1
 ```
 
-如需使用百炼较长的 app protocol 兼容地址，也可以在 `~/.codexrouter/config.toml` 中自定义 provider。
+这是更简洁的百炼 OpenAI-compatible 平台入口。百炼较长的 app protocol
+兼容地址也可用：
+
+```text
+https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1
+```
+
+如果你的账号、应用或网络策略要求使用较长地址，可以在
+`~/.codexrouter/config.toml` 中自定义 provider。
 
 ## 它解决什么问题
 
@@ -126,6 +134,11 @@ Why it exists:
 - Keep configuration isolated under `~/.codexrouter`.
 - Preserve tool use, file edits, tests, MCP, and multi-step coding loops.
 
+The built-in `qwen` provider uses
+`https://dashscope.aliyuncs.com/compatible-mode/v1`. If your DashScope setup
+requires the app-protocol compatible endpoint, configure a custom provider with
+`https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1`.
+
 Tradeoffs:
 
 - Model behavior is not identical across providers, especially for tool calls and long tasks.
@@ -157,6 +170,12 @@ coder exec -m qwen3.6-plus -c model_provider=qwen "このリポジトリの主�
 - `~/.codexrouter` を使うため、既存の Codex 設定と分離できます。
 - CLI/TUI、ツール呼び出し、ファイル編集、テスト実行、MCP を同じ流れで扱えます。
 
+組み込みの `qwen` provider は
+`https://dashscope.aliyuncs.com/compatible-mode/v1` を使います。環境により
+app protocol 互換エンドポイントが必要な場合は、
+`https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1`
+を custom provider として設定できます。
+
 注意点：
 
 - モデルごとに tool calling と長いタスクの安定性が異なります。
@@ -187,6 +206,12 @@ coder exec -m qwen3.6-plus -c model_provider=qwen "이 저장소의 주요 모�
 - Codex 스타일의 로컬 에이전트 워크플로를 유지하면서 모델 백엔드만 바꿀 수 있습니다.
 - 설정은 `~/.codexrouter`에 저장되어 기존 Codex 환경과 분리됩니다.
 - 도구 호출, 파일 수정, 테스트 실행, MCP, 다단계 작업 루프를 그대로 사용할 수 있습니다.
+
+기본 `qwen` provider는
+`https://dashscope.aliyuncs.com/compatible-mode/v1`를 사용합니다. DashScope
+환경에서 app protocol 호환 엔드포인트가 필요하다면
+`https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1`를
+custom provider로 설정할 수 있습니다.
 
 한계:
 
